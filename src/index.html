@@ -89,7 +89,7 @@
             intensity: settings.lightIntensity,
             colors: getLightColors(settings),
           },
-          lerp: settings.smoothness,
+          lerp: 1.05 - settings.smoothness,  // Invert: higher smoothness = slower/smoother
           noise: settings.noise,
         },
         sleepRadiusX: settings.sleepRadiusX,
@@ -172,8 +172,9 @@
       }
 
       // Apply animation properties
+      // Invert smoothness: higher smoothness = slower/smoother movement
       if (changedKeys.includes('smoothness')) {
-        app.tubes.options.lerp = settings.smoothness;
+        app.tubes.options.lerp = 1.05 - settings.smoothness;  // 0.05 to 1 → 1 to 0.05
       }
       if (changedKeys.includes('noise')) {
         app.tubes.options.noise = settings.noise;
