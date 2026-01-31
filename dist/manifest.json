@@ -22,37 +22,23 @@
       "max": 32,
       "step": 1
     },
-    "minRadius": {
+    "tubeRadius": {
       "type": "range",
-      "label": "Min Radius",
-      "default": 0.005,
-      "min": 0.001,
-      "max": 0.05,
-      "step": 0.001
-    },
-    "maxRadius": {
-      "type": "range",
-      "label": "Max Radius",
-      "default": 0.05,
-      "min": 0.01,
-      "max": 0.2,
+      "label": "Tube Thickness",
+      "description": "Radius of all tubes",
+      "default": 0.03,
+      "min": 0.005,
+      "max": 0.15,
       "step": 0.005
     },
-    "minLength": {
+    "tubeLength": {
       "type": "range",
-      "label": "Min Length",
-      "default": 32,
-      "min": 8,
-      "max": 128,
-      "step": 8
-    },
-    "maxLength": {
-      "type": "range",
-      "label": "Max Length",
-      "default": 128,
-      "min": 32,
+      "label": "Tube Length",
+      "description": "Number of segments (longer = more trail)",
+      "default": 64,
+      "min": 1,
       "max": 256,
-      "step": 8
+      "step": 1
     },
 
     "materialSection": {
@@ -117,16 +103,6 @@
       "type": "color",
       "label": "Color 3",
       "default": "#53bc28"
-    },
-    "tubeColor4": {
-      "type": "color",
-      "label": "Color 4",
-      "default": "#4ecdc4"
-    },
-    "tubeColor5": {
-      "type": "color",
-      "label": "Color 5",
-      "default": "#6958d5"
     },
     "randomizeTubeColors": {
       "type": "button",

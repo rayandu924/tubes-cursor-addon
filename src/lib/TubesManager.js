@@ -7,11 +7,11 @@ import {
   Group,
   PointLight,
   MeshStandardMaterial,
-  MathUtils,
   Vector3,
 } from 'three';
 
 import { Tube } from './Tube.js';
+import { DynamicTubeGeometry } from './DynamicTubeGeometry.js';
 import { createColorGradient } from './color-gradient.js';
 
 /**
@@ -26,13 +26,11 @@ export const DEFAULT_OPTIONS = {
   // Tube colors (null = random at init)
   colors: null,
 
-  // Radius range
-  minRadius: 0.005,
-  maxRadius: 0.05,
+  // Tube radius (thickness)
+  radius: 0.03,
 
-  // Segment range (longer tubes have more segments)
-  minTubularSegments: 32,
-  maxTubularSegments: 128,
+  // Tube length (segments)
+  tubularSegments: 64,
 
   // Material properties
   material: {
@@ -122,26 +120,16 @@ export class TubesManager extends Group {
   }
 
   /**
-   * Create all tubes with random sizes
+   * Create all tubes with fixed size
    */
   initTubes() {
+    const { radius, tubularSegments } = this.options;
+
     for (let i = 0; i < this.options.count; i++) {
-      // Random radius within range
-      const radius = MathUtils.randFloat(
-        this.options.minRadius,
-        this.options.maxRadius
-      );
-
-      // Random segment count within range
-      const tubularSegments = MathUtils.randInt(
-        this.options.minTubularSegments,
-        this.options.maxTubularSegments
-      );
-
       // Create material
       const material = new MeshStandardMaterial(this.options.material);
 
-      // Create tube
+      // Create tube with fixed size
       this.tubes[i] = new Tube({ radius, tubularSegments }, material);
 
       // Add to group
@@ -185,6 +173,35 @@ export class TubesManager extends Group {
     this.lights.forEach((light) => {
       light.intensity = intensity;
     });
+  }
+
+  /**
+   * Rebuild all tube geometries with new segment count
+   * @param {number} tubularSegments - New segment count
+   */
+  rebuildGeometries(tubularSegments) {
+    const radius = this.tubes[0]?.geometry.parameters.radius || this.options.radius;
+
+    this.tubes.forEach((tube) => {
+      // Store old geometry reference
+      const oldGeometry = tube.geometry;
+
+      // Create new geometry with new segment count
+      tube.geometry = new DynamicTubeGeometry(tubularSegments, radius, 8);
+
+      // Copy curve reference
+      tube.curve = tube.geometry.curve;
+      tube.points = tube.curve.points;
+
+      // Dispose old geometry
+      oldGeometry.dispose();
+
+      // Initial update
+      tube.geometry.update();
+    });
+
+    // Update stored option
+    this.options.tubularSegments = tubularSegments;
   }
 
   /**

@@ -51,8 +51,6 @@
         settings.tubeColor1,
         settings.tubeColor2,
         settings.tubeColor3,
-        settings.tubeColor4,
-        settings.tubeColor5,
       ];
     }
 
@@ -81,10 +79,8 @@
         tubes: {
           count: settings.tubeCount,
           colors: getTubeColors(settings),
-          minRadius: settings.minRadius,
-          maxRadius: settings.maxRadius,
-          minTubularSegments: settings.minLength,
-          maxTubularSegments: settings.maxLength,
+          radius: settings.tubeRadius,
+          tubularSegments: settings.tubeLength,
           material: {
             metalness: settings.metalness,
             roughness: settings.roughness,
@@ -133,14 +129,11 @@
     function applySettings(settings, changedKeys) {
       if (!app) return;
 
-      // Check if we need to reinitialize (tube count or bloom toggle changed)
+      // Check if we need to reinitialize (tube count, length, or bloom toggle)
       const needsReinit = changedKeys.some(key =>
         key === 'tubeCount' ||
-        key === 'bloomEnabled' ||
-        key === 'minLength' ||
-        key === 'maxLength' ||
-        key === 'minRadius' ||
-        key === 'maxRadius'
+        key === 'tubeLength' ||
+        key === 'bloomEnabled'
       );
 
       if (needsReinit) {
@@ -168,6 +161,13 @@
         app.tubes.tubes.forEach(tube => {
           tube.material.metalness = settings.metalness;
           tube.material.roughness = settings.roughness;
+        });
+      }
+
+      // Apply tube radius (thickness) - instant update
+      if (changedKeys.includes('tubeRadius')) {
+        app.tubes.tubes.forEach(tube => {
+          tube.geometry.parameters.radius = settings.tubeRadius;
         });
       }
 
@@ -208,7 +208,7 @@
      */
     function randomizeTubeColors() {
       if (!app) return;
-      const colors = Array.from({ length: 5 }, () => randomColor());
+      const colors = Array.from({ length: 3 }, () => randomColor());
       app.tubes.setColors(colors);
 
       // Sync to settings UI
@@ -217,8 +217,6 @@
           tubeColor1: colors[0],
           tubeColor2: colors[1],
           tubeColor3: colors[2],
-          tubeColor4: colors[3],
-          tubeColor5: colors[4],
         });
       }
     }
@@ -344,10 +342,8 @@
         // Standalone mode - use fallback defaults
         initApp({
           tubeCount: 16,
-          minRadius: 0.005,
-          maxRadius: 0.05,
-          minLength: 32,
-          maxLength: 128,
+          tubeRadius: 0.03,
+          tubeLength: 64,
           metalness: 1,
           roughness: 0.25,
           smoothness: 0.5,
@@ -355,8 +351,6 @@
           tubeColor1: '#f967fb',
           tubeColor2: '#ff6b6b',
           tubeColor3: '#53bc28',
-          tubeColor4: '#4ecdc4',
-          tubeColor5: '#6958d5',
           lightIntensity: 200,
           lightColor1: '#83f36e',
           lightColor2: '#fe8a2e',

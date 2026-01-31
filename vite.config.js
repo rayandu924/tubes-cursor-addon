@@ -3,9 +3,14 @@ import { resolve } from 'path';
 
 export default defineConfig({
   root: '.',
+  publicDir: 'public',
   server: {
     open: '/dev.html',
-    port: 3000
+    port: 5173,
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    }
   },
   build: {
     outDir: 'dist',
