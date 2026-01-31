@@ -1,0 +1,117 @@
+{
+  "name": "Tubes Cursor",
+  "version": "1.0.0",
+  "sdkVersion": "2.7.0",
+  "description": "Interactive 3D tubes that follow the cursor with colorful lights and bloom effect",
+  "author": "rayandu924",
+  "categories": ["cursor", "3d", "interactive"],
+  "capabilities": {
+    "hotReload": true,
+    "systemEvents": ["viewport:resize", "visibility:change"]
+  },
+  "settings": {
+    "tubeColors": {
+      "type": "section",
+      "label": "Tube Colors"
+    },
+    "tubeColor1": {
+      "type": "color",
+      "label": "Tube 1",
+      "default": "#f967fb"
+    },
+    "tubeColor2": {
+      "type": "color",
+      "label": "Tube 2",
+      "default": "#53bc28"
+    },
+    "tubeColor3": {
+      "type": "color",
+      "label": "Tube 3",
+      "default": "#6958d5"
+    },
+    "lightColors": {
+      "type": "section",
+      "label": "Light Colors"
+    },
+    "lightColor1": {
+      "type": "color",
+      "label": "Light 1",
+      "default": "#83f36e"
+    },
+    "lightColor2": {
+      "type": "color",
+      "label": "Light 2",
+      "default": "#fe8a2e"
+    },
+    "lightColor3": {
+      "type": "color",
+      "label": "Light 3",
+      "default": "#ff008a"
+    },
+    "lightColor4": {
+      "type": "color",
+      "label": "Light 4",
+      "default": "#60aed5"
+    },
+    "tubeSettings": {
+      "type": "section",
+      "label": "Tube Settings"
+    },
+    "tubeRadius": {
+      "type": "range",
+      "label": "Tube Radius",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 2,
+      "step": 0.1
+    },
+    "tubeLength": {
+      "type": "range",
+      "label": "Trail Length",
+      "default": 50,
+      "min": 20,
+      "max": 100,
+      "step": 5
+    },
+    "smoothness": {
+      "type": "range",
+      "label": "Smoothness",
+      "default": 0.15,
+      "min": 0.01,
+      "max": 0.5,
+      "step": 0.01
+    },
+    "bloomSettings": {
+      "type": "section",
+      "label": "Bloom Effect"
+    },
+    "bloomStrength": {
+      "type": "range",
+      "label": "Bloom Strength",
+      "default": 1.5,
+      "min": 0,
+      "max": 3,
+      "step": 0.1
+    },
+    "bloomRadius": {
+      "type": "range",
+      "label": "Bloom Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    "lightIntensity": {
+      "type": "range",
+      "label": "Light Intensity",
+      "default": 200,
+      "min": 50,
+      "max": 500,
+      "step": 10
+    }
+  },
+  "defaultLayout": {
+    "width": 100,
+    "height": 100
+  }
+}
