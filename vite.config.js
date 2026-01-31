@@ -1,27 +1,37 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { renameSync } from 'fs';
 
 export default defineConfig({
-  root: '.',
-  publicDir: 'public',
+  root: 'src',  // Source files in src/
+  publicDir: '../public',
   server: {
-    open: '/dev.html',
+    open: '/index.html',
     port: 5173,
     cors: true,
     headers: {
       'Access-Control-Allow-Origin': '*',
     }
   },
-  plugins: [viteSingleFile()],
-  build: {
-    outDir: 'dist',
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html')
+  plugins: [
+    viteSingleFile(),
+    {
+      name: 'move-to-root',
+      closeBundle() {
+        // Move built index.html from dist/ to root
+        try {
+          renameSync('dist/index.html', 'index.html');
+          console.log('✓ Moved dist/index.html to ./index.html');
+        } catch (e) {
+          console.error('Failed to move file:', e);
+        }
       }
-    },
-    // Inline all assets for single-file addon
+    }
+  ],
+  build: {
+    outDir: '../dist',
+    emptyOutDir: true,
     assetsInlineLimit: 100000000,
     cssCodeSplit: false
   }
