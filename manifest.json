@@ -168,17 +168,17 @@
     "bloomStrength": {
       "type": "range",
       "label": "Strength",
-      "default": 1.5,
+      "default": 5,
       "min": 0,
-      "max": 5,
+      "max": 10,
       "step": 0.1
     },
     "bloomRadius": {
       "type": "range",
       "label": "Radius",
-      "default": 0.5,
+      "default": 1.5,
       "min": 0,
-      "max": 2,
+      "max": 3,
       "step": 0.1
     },
 
