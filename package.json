@@ -1,0 +1,22 @@
+{
+  "name": "tubes-cursor-addon",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Custom Tubes Cursor addon for MyWallPaper",
+  "devDependencies": {
+    "js-beautify": "^1.15.4",
+    "prettier": "^3.8.1",
+    "vite": "^6.4.1"
+  },
+  "dependencies": {
+    "three": "^0.182.0"
+  }
+}

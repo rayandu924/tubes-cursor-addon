@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tubes Cursor - Original Style</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000 !important; }
+    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: transparent !important; }
+
+    #debug {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      color: #0f0;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 1000;
+      min-width: 180px;
+    }
+    #debug .row { display: flex; justify-content: space-between; margin: 4px 0; }
+    #debug .label { color: #888; }
+    #debug .value { color: #0f0; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="debug">
+    <div class="row"><span class="label">FPS</span><span class="value" id="fps">0</span></div>
+    <div class="row"><span class="label">Tubes</span><span class="value" id="tubes">0</span></div>
+    <div class="row"><span class="label">Bloom</span><span class="value" id="bloom">ON</span></div>
+  </div>
+
+  <script type="module">
+    import TubesCursor from './src/tubes-cursor-clean.js';
+
+    // Initialize with original default values
+    const app = TubesCursor(document.getElementById('canvas'));
+    window.app = app;
+
+    // Debug panel
+    const fpsEl = document.getElementById('fps');
+    const tubesEl = document.getElementById('tubes');
+    const bloomEl = document.getElementById('bloom');
+
+    let frames = 0;
+    let lastTime = performance.now();
+
+    bloomEl.textContent = app.bloom ? 'ON' : 'OFF';
+    tubesEl.textContent = app.tubes?.tubes?.length || 0;
+
+    function updateFPS() {
+      frames++;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        fpsEl.textContent = frames;
+        frames = 0;
+        lastTime = now;
+      }
+      requestAnimationFrame(updateFPS);
+    }
+    updateFPS();
+  </script>
+</body>
+</html>
