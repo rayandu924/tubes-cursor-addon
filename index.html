@@ -23,13 +23,14 @@
       width: 100%;
       height: 100%;
       background: transparent !important;
-      filter: blur(20px) brightness(2) saturate(2.5);
-      opacity: 0.9;
+      filter: blur(80px) brightness(1.8) saturate(2);
+      opacity: 0.7;
       pointer-events: none;
       z-index: 1;
-      /* Optimisations GPU */
-      will-change: contents;
-      transform: translateZ(0);
+      /* GPU optimizations */
+      will-change: transform;
+      transform: translate3d(0,0,0);
+      backface-visibility: hidden;
       contain: layout style paint;
     }
     #canvas {
@@ -40,6 +41,9 @@
       height: 100%;
       background: transparent !important;
       z-index: 2;
+      /* GPU layer */
+      will-change: transform;
+      transform: translate3d(0,0,0);
     }
   </style>
 </head>
@@ -85,14 +89,35 @@
     });
 
     // ============================================
-    // GLOW EFFECT - Optimized with createImageBitmap + bitmaprenderer
+    // GLOW EFFECT - Optimized
     // ============================================
     const mainCanvas = document.getElementById('canvas');
     const glowCanvas = document.getElementById('glow-canvas');
-    const glowCtx = glowCanvas.getContext('bitmaprenderer');
-    let lastImageBitmap = null;
+    const glowCtx = glowCanvas.getContext('2d', { alpha: true });
 
-    // Hook into Three.js render loop for glow
+    let isDrawing = false;
+    let dimensionsSet = false;
+
+    function updateGlow() {
+      if (isDrawing) return;
+      isDrawing = true;
+
+      // Sync dimensions une seule fois ou si changement
+      const w = mainCanvas.width;
+      const h = mainCanvas.height;
+
+      if (!dimensionsSet || glowCanvas.width !== w || glowCanvas.height !== h) {
+        glowCanvas.width = w;
+        glowCanvas.height = h;
+        dimensionsSet = true;
+      }
+
+      glowCtx.clearRect(0, 0, w, h);
+      glowCtx.drawImage(mainCanvas, 0, 0);
+      isDrawing = false;
+    }
+
+    // Hook render loop
     setTimeout(() => {
       if (app.three && app.three.renderer) {
         const renderer = app.three.renderer;
@@ -102,31 +127,13 @@
         renderer.render = function(scene, camera) {
           originalRender(scene, camera);
 
-          // Update glow every 2 frames for performance
-          frameCount++;
-          if (frameCount % 2 === 0) {
-            // Synchroniser dimensions
-            if (glowCanvas.width !== mainCanvas.width ||
-                glowCanvas.height !== mainCanvas.height) {
-              glowCanvas.width = mainCanvas.width;
-              glowCanvas.height = mainCanvas.height;
-            }
-
-            // Copie async non-bloquante
-            createImageBitmap(mainCanvas).then(bitmap => {
-              if (lastImageBitmap) lastImageBitmap.close();
-              lastImageBitmap = bitmap;
-              glowCtx.transferFromImageBitmap(bitmap);
-            }).catch(err => console.error('Bitmap error:', err));
+          // Update glow toutes les 2 frames
+          if (++frameCount % 2 === 0) {
+            updateGlow();
           }
         };
       }
     }, 500);
-
-    // Cleanup
-    window.addEventListener('beforeunload', () => {
-      if (lastImageBitmap) lastImageBitmap.close();
-    });
 
     // ============================================
     // HOT RELOAD SETTINGS
@@ -135,18 +142,43 @@
       window.MyWallpaper.onSettingsChange((newConfig) => {
         config = { ...config, ...newConfig };
 
-        app.tubes.setColors([
-          config.tubeColor1,
-          config.tubeColor2,
-          config.tubeColor3
-        ]);
+        if (app.tubes) {
+          // Couleurs des tubes (méthode directe)
+          if (app.tubes.setColors) {
+            app.tubes.setColors([config.tubeColor1, config.tubeColor2, config.tubeColor3]);
+          }
 
-        app.tubes.setLightsColors([
-          config.lightColor1,
-          config.lightColor2,
-          config.lightColor3,
-          config.lightColor4
-        ]);
+          // Couleurs des lumières (méthode directe)
+          if (app.tubes.setLightsColors) {
+            app.tubes.setLightsColors([config.lightColor1, config.lightColor2, config.lightColor3, config.lightColor4]);
+          }
+
+          // Intensité lumière (méthode directe)
+          if (app.tubes.setLightsIntensity && config.lightIntensity !== undefined) {
+            app.tubes.setLightsIntensity(config.lightIntensity);
+          }
+
+          // Options qui nécessitent modification directe
+          if (app.tubes.options) {
+            const opts = app.tubes.options;
+
+            // Rayon des tubes
+            if (config.tubeRadius !== undefined) {
+              opts.minRadius = config.tubeRadius * 0.1;
+              opts.maxRadius = config.tubeRadius;
+            }
+
+            // Longueur (segments)
+            if (config.tubeLength !== undefined) {
+              opts.maxTubularSegments = config.tubeLength;
+            }
+
+            // Fluidité
+            if (config.smoothness !== undefined) {
+              opts.lerp = config.smoothness;
+            }
+          }
+        }
       });
 
       window.MyWallpaper.renderComplete();

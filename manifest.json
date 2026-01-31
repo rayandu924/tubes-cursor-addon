@@ -2,7 +2,7 @@
   "name": "Tubes Cursor",
   "version": "1.0.0",
   "sdkVersion": "2.7.0",
-  "description": "Interactive 3D tubes that follow the cursor with colorful lights and bloom effect",
+  "description": "Interactive 3D tubes that follow the cursor with colorful lights and glow effect",
   "author": "rayandu924",
   "categories": ["cursor", "3d", "interactive"],
   "capabilities": {
@@ -60,46 +60,26 @@
     "tubeRadius": {
       "type": "range",
       "label": "Tube Radius",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 2,
-      "step": 0.1
+      "default": 0.05,
+      "min": 0.01,
+      "max": 0.2,
+      "step": 0.01
     },
     "tubeLength": {
       "type": "range",
-      "label": "Trail Length",
-      "default": 50,
-      "min": 20,
-      "max": 100,
-      "step": 5
+      "label": "Tube Length",
+      "default": 128,
+      "min": 32,
+      "max": 256,
+      "step": 8
     },
     "smoothness": {
       "type": "range",
       "label": "Smoothness",
-      "default": 0.15,
-      "min": 0.01,
-      "max": 0.5,
-      "step": 0.01
-    },
-    "bloomSettings": {
-      "type": "section",
-      "label": "Bloom Effect"
-    },
-    "bloomStrength": {
-      "type": "range",
-      "label": "Bloom Strength",
-      "default": 1.5,
-      "min": 0,
-      "max": 3,
-      "step": 0.1
-    },
-    "bloomRadius": {
-      "type": "range",
-      "label": "Bloom Radius",
       "default": 0.5,
-      "min": 0,
+      "min": 0.1,
       "max": 1,
-      "step": 0.1
+      "step": 0.05
     },
     "lightIntensity": {
       "type": "range",
