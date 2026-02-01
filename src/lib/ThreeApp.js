@@ -70,17 +70,25 @@ export class ThreeApp {
     // Debounced resize handler for performance
     this._resizeTimeout = null;
     this._isResizing = false;
+    this._resizeCount = 0;
     this._boundResize = () => {
       // Mark as resizing to skip heavy operations
       this._isResizing = true;
+      this._resizeCount++;
 
       if (this._resizeTimeout) clearTimeout(this._resizeTimeout);
 
-      // Wait for resize to stabilize before doing full resize
+      // Quick low-quality resize for responsiveness
+      if (this._resizeCount === 1) {
+        this._quickResize();
+      }
+
+      // Wait for resize to stabilize before doing full quality resize
       this._resizeTimeout = setTimeout(() => {
         this._isResizing = false;
+        this._resizeCount = 0;
         this.resize();
-      }, 150);
+      }, 200);
     };
 
     // Setup
@@ -99,6 +107,24 @@ export class ThreeApp {
 
   setupResize() {
     window.addEventListener('resize', this._boundResize);
+  }
+
+  // Quick resize - just update renderer size at low quality
+  _quickResize() {
+    let width, height;
+
+    if (this.sizeMode === 'parent') {
+      const parent = this.canvas.parentElement || document.body;
+      width = parent.clientWidth;
+      height = parent.clientHeight;
+    } else {
+      width = window.innerWidth;
+      height = window.innerHeight;
+    }
+
+    // Use pixel ratio of 1 for quick resize
+    this.renderer.setPixelRatio(1);
+    this.renderer.setSize(width, height);
   }
 
   resize() {

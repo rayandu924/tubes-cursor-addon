@@ -22,9 +22,11 @@ export function createBloom(renderer, scene, camera, options = {}) {
 
   const size = renderer.getSize(new Vector2());
   const pixelRatio = renderer.getPixelRatio();
+  const w = size.x * pixelRatio;
+  const h = size.y * pixelRatio;
 
   // Create render target (no MSAA for performance, bloom hides aliasing)
-  const renderTarget = new WebGLRenderTarget(size.x * pixelRatio, size.y * pixelRatio, {
+  const renderTarget = new WebGLRenderTarget(w, h, {
     type: HalfFloatType,
   });
 
@@ -34,8 +36,9 @@ export function createBloom(renderer, scene, camera, options = {}) {
   renderPass.clearAlpha = 0;
   composer.addPass(renderPass);
 
+  // Use half resolution for bloom (much faster, barely noticeable difference)
   const bloomPass = new UnrealBloomPass(
-    new Vector2(size.x, size.y),
+    new Vector2(Math.floor(w / 2), Math.floor(h / 2)),
     strength,
     radius,
     threshold
@@ -47,8 +50,9 @@ export function createBloom(renderer, scene, camera, options = {}) {
   composer.addPass(outputPass);
 
   // Track current size to avoid unnecessary resizes
-  let currentW = size.x * pixelRatio;
-  let currentH = size.y * pixelRatio;
+  let currentW = w;
+  let currentH = h;
+  let resizeScheduled = false;
 
   return {
     composer,
@@ -69,10 +73,19 @@ export function createBloom(renderer, scene, camera, options = {}) {
       currentW = w;
       currentH = h;
 
-      // Resize all at once
+      // Resize render target and composer immediately
       renderTarget.setSize(w, h);
       composer.setSize(w, h);
-      bloomPass.resolution.set(w, h);
+
+      // Defer bloom resize to next frame to spread the load
+      if (!resizeScheduled) {
+        resizeScheduled = true;
+        requestAnimationFrame(() => {
+          // Bloom at half resolution for performance
+          bloomPass.resolution.set(Math.floor(w / 2), Math.floor(h / 2));
+          resizeScheduled = false;
+        });
+      }
     },
 
     setParams(params) {
