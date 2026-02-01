@@ -67,8 +67,12 @@ export class ThreeApp {
     this._animationFrameId = null;
     this._isDisposed = false;
 
-    // Bound resize handler for cleanup
-    this._boundResize = () => this.resize();
+    // Debounced resize handler for performance
+    this._resizeTimeout = null;
+    this._boundResize = () => {
+      if (this._resizeTimeout) clearTimeout(this._resizeTimeout);
+      this._resizeTimeout = setTimeout(() => this.resize(), 100);
+    };
 
     // Setup
     this.setupResize();
@@ -158,6 +162,12 @@ export class ThreeApp {
     if (this._animationFrameId) {
       cancelAnimationFrame(this._animationFrameId);
       this._animationFrameId = null;
+    }
+
+    // Clear resize timeout
+    if (this._resizeTimeout) {
+      clearTimeout(this._resizeTimeout);
+      this._resizeTimeout = null;
     }
 
     // Remove resize listener

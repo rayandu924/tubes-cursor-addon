@@ -41,6 +41,38 @@ export class DynamicTubeGeometry extends TubeGeometry {
 const _normal = new Vector3();
 const _vertex = new Vector3();
 
+// Pre-computed sin/cos tables (cached per radialSegments count)
+const _sinCosCache = new Map();
+
+function getSinCosTable(radialSegments) {
+  if (_sinCosCache.has(radialSegments)) {
+    return _sinCosCache.get(radialSegments);
+  }
+  const table = { sin: [], cos: [] };
+  for (let j = 0; j <= radialSegments; j++) {
+    const angle = (j / radialSegments) * Math.PI * 2;
+    table.sin[j] = Math.sin(angle);
+    table.cos[j] = -Math.cos(angle);
+  }
+  _sinCosCache.set(radialSegments, table);
+  return table;
+}
+
+// Pre-computed sin table for tapered radius
+const _radiusSinCache = new Map();
+
+function getRadiusSinTable(tubularSegments) {
+  if (_radiusSinCache.has(tubularSegments)) {
+    return _radiusSinCache.get(tubularSegments);
+  }
+  const table = [];
+  for (let i = 0; i <= tubularSegments; i++) {
+    table[i] = Math.sin((i / tubularSegments) * Math.PI);
+  }
+  _radiusSinCache.set(tubularSegments, table);
+  return table;
+}
+
 /**
  * Update tube geometry vertices based on curve
  * @param {DynamicTubeGeometry} geometry
@@ -55,57 +87,68 @@ function updateTubeGeometry(geometry) {
   // Get attribute arrays
   const positionAttr = geometry.getAttribute('position');
   const normalAttr = geometry.getAttribute('normal');
+  const positions = positionAttr.array;
+  const normals = normalAttr.array;
+
+  // Get cached tables
+  const sinCos = getSinCosTable(radialSegments);
+  const radiusSin = getRadiusSinTable(tubularSegments);
 
   // Use module-level reusable vectors
   const normal = _normal;
-  const vertex = _vertex;
+  const points = curve.points;
+  const frameNormals = frames.normals;
+  const frameBinormals = frames.binormals;
+
+  const stride = (radialSegments + 1) * 3;
 
   // Update each segment
   for (let i = 0; i <= tubularSegments; i++) {
-    generateSegment(i);
-  }
-
-  function generateSegment(segmentIndex) {
-    // Progress along tube (0 to 1)
-    const t = segmentIndex / tubularSegments;
-
-    // Tapered radius - thicker in middle, thinner at ends
-    const currentRadius = Math.sin(t * Math.PI) * radius;
+    // Tapered radius
+    const currentRadius = radiusSin[i] * radius;
 
     // Get point on curve
-    vertex.copy(curve.points[segmentIndex]);
-
-    // Starting index in attribute array
-    let index = segmentIndex * (radialSegments + 1);
+    const point = points[i];
+    const px = point.x;
+    const py = point.y;
+    const pz = point.z;
 
     // Get frame vectors
-    const N = frames.normals[segmentIndex];
-    const B = frames.binormals[segmentIndex];
+    const N = frameNormals[i];
+    const B = frameBinormals[i];
+    const Nx = N.x, Ny = N.y, Nz = N.z;
+    const Bx = B.x, By = B.y, Bz = B.z;
+
+    // Starting index in attribute array
+    let idx = i * stride;
 
     // Generate vertices around the circumference
     for (let j = 0; j <= radialSegments; j++) {
-      const angle = (j / radialSegments) * Math.PI * 2;
-      const sinAngle = Math.sin(angle);
-      const cosAngle = -Math.cos(angle);
+      const sinAngle = sinCos.sin[j];
+      const cosAngle = sinCos.cos[j];
 
       // Calculate normal
-      normal.x = cosAngle * N.x + sinAngle * B.x;
-      normal.y = cosAngle * N.y + sinAngle * B.y;
-      normal.z = cosAngle * N.z + sinAngle * B.z;
-      normal.normalize();
+      const nx = cosAngle * Nx + sinAngle * Bx;
+      const ny = cosAngle * Ny + sinAngle * By;
+      const nz = cosAngle * Nz + sinAngle * Bz;
 
-      // Set position
-      positionAttr.setXYZ(
-        index,
-        vertex.x + currentRadius * normal.x,
-        vertex.y + currentRadius * normal.y,
-        vertex.z + currentRadius * normal.z
-      );
+      // Normalize
+      const len = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
+      const nnx = nx * len;
+      const nny = ny * len;
+      const nnz = nz * len;
 
-      // Set normal
-      normalAttr.setXYZ(index, normal.x, normal.y, normal.z);
+      // Set position directly in array
+      positions[idx] = px + currentRadius * nnx;
+      positions[idx + 1] = py + currentRadius * nny;
+      positions[idx + 2] = pz + currentRadius * nnz;
 
-      index++;
+      // Set normal directly in array
+      normals[idx] = nnx;
+      normals[idx + 1] = nny;
+      normals[idx + 2] = nnz;
+
+      idx += 3;
     }
   }
 

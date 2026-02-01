@@ -21,11 +21,11 @@ export function createBloom(renderer, scene, camera, options = {}) {
   } = options;
 
   const size = renderer.getSize(new Vector2());
+  const pixelRatio = renderer.getPixelRatio();
 
-  // Create render target
-  const renderTarget = new WebGLRenderTarget(size.x, size.y, {
+  // Create render target (no MSAA for performance, bloom hides aliasing)
+  const renderTarget = new WebGLRenderTarget(size.x * pixelRatio, size.y * pixelRatio, {
     type: HalfFloatType,
-    samples: 4,
   });
 
   const composer = new EffectComposer(renderer, renderTarget);
@@ -55,9 +55,12 @@ export function createBloom(renderer, scene, camera, options = {}) {
     },
 
     resize(width, height) {
-      renderTarget.setSize(width, height);
-      composer.setSize(width, height);
-      bloomPass.resolution.set(width, height);
+      const pr = renderer.getPixelRatio();
+      const w = width * pr;
+      const h = height * pr;
+      renderTarget.setSize(w, h);
+      composer.setSize(w, h);
+      bloomPass.resolution.set(w, h);
     },
 
     setParams(params) {
