@@ -29,7 +29,7 @@ export const DEFAULT_OPTIONS = {
   // Tube radius (thickness)
   radius: 0.03,
 
-  // Radius variation (0 = all same size, 0.5 = ±50% variation)
+  // Radius variation - exact value (0 = all same size, 0.01 = ±0.01 variation)
   radiusVariation: 0,
 
   // Tube length (segments) - 48 is good balance of quality/performance
@@ -135,12 +135,12 @@ export class TubesManager extends Group {
       // Create material
       const material = new MeshStandardMaterial(this.options.material);
 
-      // Calculate radius with variation
-      // variation=0.5 means ±50%, so radius can be 0.5x to 1.5x base
+      // Calculate radius with variation (exact value, not percentage)
+      // variation=0.01 means radius ± 0.01
       let tubeRadius = radius;
       if (radiusVariation > 0) {
-        const variation = (Math.random() * 2 - 1) * radiusVariation; // -variation to +variation
-        tubeRadius = radius * (1 + variation);
+        const delta = (Math.random() * 2 - 1) * radiusVariation; // -variation to +variation
+        tubeRadius = Math.max(0.001, radius + delta); // minimum 0.001 to avoid zero
       }
 
       // Create tube

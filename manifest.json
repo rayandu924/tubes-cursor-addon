@@ -34,11 +34,11 @@
     "tubeRadiusVariation": {
       "type": "range",
       "label": "Thickness Variation",
-      "description": "Random variation (0.5 = ±50% from base)",
+      "description": "Random ± variation (ex: 0.01 = ±0.01)",
       "default": 0,
       "min": 0,
-      "max": 0.8,
-      "step": 0.05
+      "max": 0.05,
+      "step": 0.005
     },
     "tubeLength": {
       "type": "range",
