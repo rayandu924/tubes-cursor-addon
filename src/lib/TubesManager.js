@@ -29,8 +29,11 @@ export const DEFAULT_OPTIONS = {
   // Tube radius (thickness)
   radius: 0.03,
 
-  // Tube length (segments)
-  tubularSegments: 64,
+  // Tube length (segments) - 48 is good balance of quality/performance
+  tubularSegments: 48,
+
+  // Radial segments (circumference detail) - 6 is enough with bloom
+  radialSegments: 6,
 
   // Material properties
   material: {
@@ -123,14 +126,14 @@ export class TubesManager extends Group {
    * Create all tubes with fixed size
    */
   initTubes() {
-    const { radius, tubularSegments } = this.options;
+    const { radius, tubularSegments, radialSegments, count } = this.options;
 
-    for (let i = 0; i < this.options.count; i++) {
+    for (let i = 0; i < count; i++) {
       // Create material
       const material = new MeshStandardMaterial(this.options.material);
 
       // Create tube with fixed size
-      this.tubes[i] = new Tube({ radius, tubularSegments }, material);
+      this.tubes[i] = new Tube({ radius, tubularSegments, radialSegments }, material);
 
       // Add to group
       this.add(this.tubes[i]);
@@ -209,13 +212,15 @@ export class TubesManager extends Group {
    * @param {Object} state - Animation state with elapsed time
    */
   update(state) {
-    for (let i = 0; i < this.options.count; i++) {
-      this.tubes[i].lerpTo(
-        this.target,
-        this.options.lerp,
-        this.options.noise,
-        state.elapsed
-      );
+    const tubes = this.tubes;
+    const len = tubes.length;
+    const target = this.target;
+    const lerp = this.options.lerp;
+    const noise = this.options.noise;
+    const elapsed = state.elapsed;
+
+    for (let i = 0; i < len; i++) {
+      tubes[i].lerpTo(target, lerp, noise, elapsed);
     }
   }
 

@@ -46,33 +46,44 @@ export class Tube extends Mesh {
    * @param {number} noiseAmount - Amount of noise displacement
    * @param {number} elapsed - Time elapsed for animation
    */
-  lerpTo(target, lerpFactor = 0.1, noiseAmount = 0.05, elapsed) {
-    // Calculate noise input based on position and time
-    // Different multipliers per axis create varied, non-uniform movement
-    // Position scale (0.01): controls spatial frequency of noise
-    // Time scales (0.04-0.06): controls animation speed per axis
-    noiseInput[0] = 0.01 * target.x + 0.040 * elapsed + this.timeDelta;
-    noiseInput[1] = 0.01 * target.y + 0.048 * elapsed + this.timeDelta;
-    noiseInput[2] = 0.01 * target.z + 0.060 * elapsed + this.timeDelta;
+  lerpTo(target, lerpFactor, noiseAmount, elapsed) {
+    const td = this.timeDelta;
+    const tx = target.x;
+    const ty = target.y;
+    const tz = target.z;
+
+    // Calculate noise input
+    noiseInput[0] = 0.01 * tx + 0.040 * elapsed + td;
+    noiseInput[1] = 0.01 * ty + 0.048 * elapsed + td;
+    noiseInput[2] = 0.01 * tz + 0.060 * elapsed + td;
 
     // Get noise displacement
-    simplex4D(noiseInput, 2 * elapsed, noiseOutput);
+    simplex4D(noiseInput, elapsed * 2, noiseOutput);
 
-    // Copy target and add noise
-    this.targetPosition.copy(target);
-    this.targetPosition.x += noiseOutput[0] * noiseAmount;
-    this.targetPosition.y += noiseOutput[1] * noiseAmount;
-    this.targetPosition.z += noiseOutput[2] * noiseAmount;
+    // Target with noise (inline, no copy)
+    const targetX = tx + noiseOutput[0] * noiseAmount;
+    const targetY = ty + noiseOutput[1] * noiseAmount;
+    const targetZ = tz + noiseOutput[2] * noiseAmount;
 
-    // Lerp first point (head) towards target
-    this.points[0].lerp(this.targetPosition, lerpFactor);
+    // Lerp first point (head) - inline for speed
+    const points = this.points;
+    const p0 = points[0];
+    const invLerp = 1 - lerpFactor;
+    p0.x = p0.x * invLerp + targetX * lerpFactor;
+    p0.y = p0.y * invLerp + targetY * lerpFactor;
+    p0.z = p0.z * invLerp + targetZ * lerpFactor;
 
-    // Each subsequent point follows the one before it (creates trailing effect)
-    for (let i = 1; i < this.points.length; i++) {
-      this.points[i].lerp(this.points[i - 1], lerpFactor);
+    // Chain lerp - each point follows previous
+    const len = points.length;
+    for (let i = 1; i < len; i++) {
+      const curr = points[i];
+      const prev = points[i - 1];
+      curr.x = curr.x * invLerp + prev.x * lerpFactor;
+      curr.y = curr.y * invLerp + prev.y * lerpFactor;
+      curr.z = curr.z * invLerp + prev.z * lerpFactor;
     }
 
-    // Update geometry to reflect new positions
+    // Update geometry
     this.geometry.update();
   }
 }

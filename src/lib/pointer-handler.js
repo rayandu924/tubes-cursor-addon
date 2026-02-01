@@ -1,168 +1,135 @@
 /**
  * PointerHandler
  * Unified mouse/touch input handling for DOM elements
+ * OPTIMIZED: Cached bounding rect, reduced function calls
  */
 
 import { Vector2 } from 'three';
 
-// Global state for all pointer handlers
+// Global state
 const handlers = new Map();
-const mousePosition = new Vector2();
+let mouseX = 0;
+let mouseY = 0;
 let isInitialized = false;
 
 /**
  * Create a pointer handler for a DOM element
- * @param {Object} options
- * @param {HTMLElement} options.domElement - DOM element to track
- * @param {Function} options.onEnter - Called when pointer enters
- * @param {Function} options.onMove - Called when pointer moves
- * @param {Function} options.onClick - Called on click
- * @param {Function} options.onLeave - Called when pointer leaves
- * @returns {Object} Handler object with position, nPosition, hover, dispose
  */
 export function createPointerHandler(options) {
+  const element = options.domElement;
+
+  // Cache rect - update on resize
+  let rect = element.getBoundingClientRect();
+  let rectLeft = rect.left;
+  let rectTop = rect.top;
+  let rectWidth = rect.width;
+  let rectHeight = rect.height;
+  let rectRight = rectLeft + rectWidth;
+  let rectBottom = rectTop + rectHeight;
+
   const handler = {
-    // Position in pixels relative to element
     position: new Vector2(),
-
-    // Normalized position (-1 to 1)
     nPosition: new Vector2(),
-
-    // Whether pointer is over element
     hover: false,
+    onEnter: options.onEnter || null,
+    onMove: options.onMove || null,
+    onClick: options.onClick || null,
+    onLeave: options.onLeave || null,
 
-    // Callbacks
-    onEnter: options.onEnter || (() => {}),
-    onMove: options.onMove || (() => {}),
-    onClick: options.onClick || (() => {}),
-    onLeave: options.onLeave || (() => {}),
+    // Update cached rect (call on resize)
+    updateRect() {
+      rect = element.getBoundingClientRect();
+      rectLeft = rect.left;
+      rectTop = rect.top;
+      rectWidth = rect.width;
+      rectHeight = rect.height;
+      rectRight = rectLeft + rectWidth;
+      rectBottom = rectTop + rectHeight;
+    },
+
+    // Fast inline check and update
+    _update() {
+      const inside = mouseX >= rectLeft && mouseX <= rectRight &&
+                     mouseY >= rectTop && mouseY <= rectBottom;
+
+      if (inside) {
+        // Update positions inline
+        const px = mouseX - rectLeft;
+        const py = mouseY - rectTop;
+        handler.position.x = px;
+        handler.position.y = py;
+        handler.nPosition.x = (px / rectWidth) * 2 - 1;
+        handler.nPosition.y = -(py / rectHeight) * 2 + 1;
+
+        if (!handler.hover) {
+          handler.hover = true;
+          if (handler.onEnter) handler.onEnter(handler);
+        }
+        if (handler.onMove) handler.onMove(handler);
+      } else if (handler.hover) {
+        handler.hover = false;
+        if (handler.onLeave) handler.onLeave(handler);
+      }
+
+      return inside;
+    }
   };
 
-  // Register handler
-  registerHandler(options.domElement, handler);
+  handlers.set(element, handler);
 
-  // Add dispose method
+  if (!isInitialized) {
+    document.body.addEventListener('pointermove', onPointerMove, { passive: true });
+    document.body.addEventListener('pointerleave', onPointerLeave);
+    document.body.addEventListener('click', onClick);
+    window.addEventListener('resize', onWindowResize);
+    isInitialized = true;
+  }
+
   handler.dispose = () => {
-    unregisterHandler(options.domElement);
+    handlers.delete(element);
+    if (handlers.size === 0 && isInitialized) {
+      document.body.removeEventListener('pointermove', onPointerMove);
+      document.body.removeEventListener('pointerleave', onPointerLeave);
+      document.body.removeEventListener('click', onClick);
+      window.removeEventListener('resize', onWindowResize);
+      isInitialized = false;
+    }
   };
 
   return handler;
 }
 
-/**
- * Register a handler for a DOM element
- */
-function registerHandler(element, handler) {
-  if (handlers.has(element)) return;
-
-  handlers.set(element, handler);
-
-  // Initialize global listeners if needed
-  if (!isInitialized) {
-    document.body.addEventListener('pointermove', onPointerMove);
-    document.body.addEventListener('pointerleave', onPointerLeave);
-    document.body.addEventListener('click', onClick);
-    isInitialized = true;
-  }
-}
-
-/**
- * Unregister a handler
- */
-function unregisterHandler(element) {
-  handlers.delete(element);
-
-  // Remove global listeners if no more handlers
-  if (handlers.size === 0 && isInitialized) {
-    document.body.removeEventListener('pointermove', onPointerMove);
-    document.body.removeEventListener('pointerleave', onPointerLeave);
-    document.body.removeEventListener('click', onClick);
-    isInitialized = false;
-  }
-}
-
-/**
- * Handle pointer move event
- */
 function onPointerMove(event) {
-  mousePosition.x = event.clientX;
-  mousePosition.y = event.clientY;
-
-  for (const [element, handler] of handlers) {
-    const rect = element.getBoundingClientRect();
-
-    if (isInsideRect(rect)) {
-      // Update positions
-      updatePositions(handler, rect);
-
-      // Handle enter
-      if (!handler.hover) {
-        handler.hover = true;
-        handler.onEnter(handler);
-      }
-
-      // Always call move
-      handler.onMove(handler);
-    } else if (handler.hover) {
-      // Handle leave
-      handler.hover = false;
-      handler.onLeave(handler);
-    }
+  mouseX = event.clientX;
+  mouseY = event.clientY;
+  for (const handler of handlers.values()) {
+    handler._update();
   }
 }
 
-/**
- * Handle click event
- */
 function onClick(event) {
-  mousePosition.x = event.clientX;
-  mousePosition.y = event.clientY;
-
-  for (const [element, handler] of handlers) {
-    const rect = element.getBoundingClientRect();
-    updatePositions(handler, rect);
-
-    if (isInsideRect(rect)) {
+  mouseX = event.clientX;
+  mouseY = event.clientY;
+  for (const handler of handlers.values()) {
+    if (handler._update() && handler.onClick) {
       handler.onClick(handler);
     }
   }
 }
 
-/**
- * Handle pointer leave (leaves document)
- */
 function onPointerLeave() {
   for (const handler of handlers.values()) {
     if (handler.hover) {
       handler.hover = false;
-      handler.onLeave(handler);
+      if (handler.onLeave) handler.onLeave(handler);
     }
   }
 }
 
-/**
- * Update handler positions from rect
- */
-function updatePositions(handler, rect) {
-  const { position, nPosition } = handler;
-
-  // Pixel position relative to element
-  position.x = mousePosition.x - rect.left;
-  position.y = mousePosition.y - rect.top;
-
-  // Normalized position (-1 to 1, y inverted for WebGL)
-  nPosition.x = (position.x / rect.width) * 2 - 1;
-  nPosition.y = -(position.y / rect.height) * 2 + 1;
-}
-
-/**
- * Check if mouse is inside rect
- */
-function isInsideRect(rect) {
-  const { x, y } = mousePosition;
-  const { left, top, width, height } = rect;
-
-  return x >= left && x <= left + width && y >= top && y <= top + height;
+function onWindowResize() {
+  for (const handler of handlers.values()) {
+    handler.updateRect();
+  }
 }
 
 export default createPointerHandler;

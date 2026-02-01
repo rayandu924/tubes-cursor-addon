@@ -1,6 +1,6 @@
 {
   "name": "Tubes Cursor",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "sdkVersion": "2.13.0",
   "description": "Interactive 3D tubes that follow the cursor with colorful lights and glow effect",
   "author": "rayandu924",
@@ -35,9 +35,9 @@
       "type": "range",
       "label": "Tube Length",
       "description": "Number of segments (longer = more trail)",
-      "default": 64,
+      "default": 48,
       "min": 1,
-      "max": 256,
+      "max": 128,
       "step": 1
     },
 
