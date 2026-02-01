@@ -80,8 +80,8 @@
           count: settings.tubeCount,
           colors: getTubeColors(settings),
           radius: settings.tubeRadius,
-          radiusVariation: settings.tubeRadiusVariation || 0,
           tubularSegments: settings.tubeLength,
+          lengthVariation: settings.tubeLengthVariation || 0,
           material: {
             metalness: settings.metalness,
             roughness: settings.roughness,
@@ -134,7 +134,7 @@
       const needsReinit = changedKeys.some(key =>
         key === 'tubeCount' ||
         key === 'tubeLength' ||
-        key === 'tubeRadiusVariation' ||
+        key === 'tubeLengthVariation' ||
         key === 'bloomEnabled'
       );
 
@@ -346,8 +346,8 @@
         initApp({
           tubeCount: 16,
           tubeRadius: 0.03,
-          tubeRadiusVariation: 0,
           tubeLength: 48,
+          tubeLengthVariation: 0,
           metalness: 1,
           roughness: 0.25,
           smoothness: 0.5,

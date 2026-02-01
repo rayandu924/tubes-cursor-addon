@@ -29,11 +29,11 @@ export const DEFAULT_OPTIONS = {
   // Tube radius (thickness)
   radius: 0.03,
 
-  // Radius variation - exact value (0 = all same size, 0.01 = ±0.01 variation)
-  radiusVariation: 0,
-
   // Tube length (segments) - 48 is good balance of quality/performance
   tubularSegments: 48,
+
+  // Length variation - exact value (0 = all same length, 10 = ±10 segments)
+  lengthVariation: 0,
 
   // Radial segments (circumference detail) - 6 is enough with bloom
   radialSegments: 6,
@@ -126,25 +126,25 @@ export class TubesManager extends Group {
   }
 
   /**
-   * Create all tubes with optional size variation
+   * Create all tubes with optional length variation
    */
   initTubes() {
-    const { radius, radiusVariation, tubularSegments, radialSegments, count } = this.options;
+    const { radius, tubularSegments, lengthVariation, radialSegments, count } = this.options;
 
     for (let i = 0; i < count; i++) {
       // Create material
       const material = new MeshStandardMaterial(this.options.material);
 
-      // Calculate radius with variation (exact value, not percentage)
-      // variation=0.01 means radius ± 0.01
-      let tubeRadius = radius;
-      if (radiusVariation > 0) {
-        const delta = (Math.random() * 2 - 1) * radiusVariation; // -variation to +variation
-        tubeRadius = Math.max(0.001, radius + delta); // minimum 0.001 to avoid zero
+      // Calculate length with variation (exact value)
+      // variation=10 means tubularSegments ± 10
+      let tubeLength = tubularSegments;
+      if (lengthVariation > 0) {
+        const delta = Math.round((Math.random() * 2 - 1) * lengthVariation);
+        tubeLength = Math.max(4, tubularSegments + delta); // minimum 4 segments
       }
 
       // Create tube
-      this.tubes[i] = new Tube({ radius: tubeRadius, tubularSegments, radialSegments }, material);
+      this.tubes[i] = new Tube({ radius, tubularSegments: tubeLength, radialSegments }, material);
 
       // Add to group
       this.add(this.tubes[i]);
