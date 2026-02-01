@@ -46,6 +46,10 @@ export function createBloom(renderer, scene, camera, options = {}) {
   const outputPass = new OutputPass();
   composer.addPass(outputPass);
 
+  // Track current size to avoid unnecessary resizes
+  let currentW = size.x * pixelRatio;
+  let currentH = size.y * pixelRatio;
+
   return {
     composer,
     bloomPass,
@@ -56,8 +60,16 @@ export function createBloom(renderer, scene, camera, options = {}) {
 
     resize(width, height) {
       const pr = renderer.getPixelRatio();
-      const w = width * pr;
-      const h = height * pr;
+      const w = Math.floor(width * pr);
+      const h = Math.floor(height * pr);
+
+      // Skip if size hasn't changed (prevents redundant GPU allocations)
+      if (w === currentW && h === currentH) return;
+
+      currentW = w;
+      currentH = h;
+
+      // Resize all at once
       renderTarget.setSize(w, h);
       composer.setSize(w, h);
       bloomPass.resolution.set(w, h);

@@ -126,10 +126,15 @@ function onPointerLeave() {
   }
 }
 
+// Debounced resize for pointer handler
+let resizeTimeout = null;
 function onWindowResize() {
-  for (const handler of handlers.values()) {
-    handler.updateRect();
-  }
+  if (resizeTimeout) clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    for (const handler of handlers.values()) {
+      handler.updateRect();
+    }
+  }, 100);
 }
 
 export default createPointerHandler;

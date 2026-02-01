@@ -69,9 +69,18 @@ export class ThreeApp {
 
     // Debounced resize handler for performance
     this._resizeTimeout = null;
+    this._isResizing = false;
     this._boundResize = () => {
+      // Mark as resizing to skip heavy operations
+      this._isResizing = true;
+
       if (this._resizeTimeout) clearTimeout(this._resizeTimeout);
-      this._resizeTimeout = setTimeout(() => this.resize(), 100);
+
+      // Wait for resize to stabilize before doing full resize
+      this._resizeTimeout = setTimeout(() => {
+        this._isResizing = false;
+        this.resize();
+      }, 150);
     };
 
     // Setup
@@ -135,6 +144,9 @@ export class ThreeApp {
     if (this._isDisposed) return;
 
     this._animationFrameId = requestAnimationFrame(() => this.animate());
+
+    // Skip heavy updates during resize to prevent lag
+    if (this._isResizing) return;
 
     // Update animation state
     this.animationState.delta = this.clock.getDelta();
