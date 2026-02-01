@@ -25,11 +25,20 @@
     "tubeRadius": {
       "type": "range",
       "label": "Tube Thickness",
-      "description": "Radius of all tubes",
+      "description": "Base radius of tubes",
       "default": 0.03,
       "min": 0.005,
       "max": 0.15,
       "step": 0.005
+    },
+    "tubeRadiusVariation": {
+      "type": "range",
+      "label": "Thickness Variation",
+      "description": "Random variation (0.5 = ±50% from base)",
+      "default": 0,
+      "min": 0,
+      "max": 0.8,
+      "step": 0.05
     },
     "tubeLength": {
       "type": "range",

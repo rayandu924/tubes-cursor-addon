@@ -29,6 +29,9 @@ export const DEFAULT_OPTIONS = {
   // Tube radius (thickness)
   radius: 0.03,
 
+  // Radius variation (0 = all same size, 0.5 = ±50% variation)
+  radiusVariation: 0,
+
   // Tube length (segments) - 48 is good balance of quality/performance
   tubularSegments: 48,
 
@@ -123,17 +126,25 @@ export class TubesManager extends Group {
   }
 
   /**
-   * Create all tubes with fixed size
+   * Create all tubes with optional size variation
    */
   initTubes() {
-    const { radius, tubularSegments, radialSegments, count } = this.options;
+    const { radius, radiusVariation, tubularSegments, radialSegments, count } = this.options;
 
     for (let i = 0; i < count; i++) {
       // Create material
       const material = new MeshStandardMaterial(this.options.material);
 
-      // Create tube with fixed size
-      this.tubes[i] = new Tube({ radius, tubularSegments, radialSegments }, material);
+      // Calculate radius with variation
+      // variation=0.5 means ±50%, so radius can be 0.5x to 1.5x base
+      let tubeRadius = radius;
+      if (radiusVariation > 0) {
+        const variation = (Math.random() * 2 - 1) * radiusVariation; // -variation to +variation
+        tubeRadius = radius * (1 + variation);
+      }
+
+      // Create tube
+      this.tubes[i] = new Tube({ radius: tubeRadius, tubularSegments, radialSegments }, material);
 
       // Add to group
       this.add(this.tubes[i]);
