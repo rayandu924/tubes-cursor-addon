@@ -69,26 +69,14 @@ export class ThreeApp {
 
     // Debounced resize handler for performance
     this._resizeTimeout = null;
-    this._isResizing = false;
-    this._resizeCount = 0;
     this._boundResize = () => {
-      // Mark as resizing to skip heavy operations
-      this._isResizing = true;
-      this._resizeCount++;
-
+      // Clear any pending resize
       if (this._resizeTimeout) clearTimeout(this._resizeTimeout);
 
-      // Quick low-quality resize for responsiveness
-      if (this._resizeCount === 1) {
-        this._quickResize();
-      }
-
-      // Wait for resize to stabilize before doing full quality resize
+      // Debounce: wait for resize to stabilize before updating
       this._resizeTimeout = setTimeout(() => {
-        this._isResizing = false;
-        this._resizeCount = 0;
         this.resize();
-      }, 200);
+      }, 150);
     };
 
     // Setup
@@ -107,24 +95,6 @@ export class ThreeApp {
 
   setupResize() {
     window.addEventListener('resize', this._boundResize);
-  }
-
-  // Quick resize - just update renderer size at low quality
-  _quickResize() {
-    let width, height;
-
-    if (this.sizeMode === 'parent') {
-      const parent = this.canvas.parentElement || document.body;
-      width = parent.clientWidth;
-      height = parent.clientHeight;
-    } else {
-      width = window.innerWidth;
-      height = window.innerHeight;
-    }
-
-    // Use pixel ratio of 1 for quick resize
-    this.renderer.setPixelRatio(1);
-    this.renderer.setSize(width, height);
   }
 
   resize() {
@@ -170,9 +140,6 @@ export class ThreeApp {
     if (this._isDisposed) return;
 
     this._animationFrameId = requestAnimationFrame(() => this.animate());
-
-    // Skip heavy updates during resize to prevent lag
-    if (this._isResizing) return;
 
     // Update animation state
     this.animationState.delta = this.clock.getDelta();
