@@ -52,7 +52,7 @@ export function createBloom(renderer, scene, camera, options = {}) {
   // Track current size to avoid unnecessary resizes
   let currentW = w;
   let currentH = h;
-  let resizeScheduled = false;
+  let bloomResizeTimeout = null;
 
   return {
     composer,
@@ -67,28 +67,27 @@ export function createBloom(renderer, scene, camera, options = {}) {
       if (width <= 0 || height <= 0) return;
 
       const pr = renderer.getPixelRatio();
-      const w = Math.floor(width * pr);
-      const h = Math.floor(height * pr);
+      const newW = Math.floor(width * pr);
+      const newH = Math.floor(height * pr);
 
       // Skip if size hasn't changed (prevents redundant GPU allocations)
-      if (w === currentW && h === currentH) return;
+      if (newW === currentW && newH === currentH) return;
 
-      currentW = w;
-      currentH = h;
+      currentW = newW;
+      currentH = newH;
 
-      // Resize render target and composer immediately
-      renderTarget.setSize(w, h);
-      composer.setSize(w, h);
+      // Resize render target and composer immediately (cheap)
+      renderTarget.setSize(newW, newH);
+      composer.setSize(newW, newH);
 
-      // Defer bloom resize to next frame to spread the load
-      if (!resizeScheduled) {
-        resizeScheduled = true;
-        requestAnimationFrame(() => {
-          // Bloom at half resolution for performance
-          bloomPass.resolution.set(Math.floor(w / 2), Math.floor(h / 2));
-          resizeScheduled = false;
-        });
-      }
+      // Delay bloom resize significantly (expensive operation)
+      // Bloom at wrong resolution is barely noticeable
+      if (bloomResizeTimeout) clearTimeout(bloomResizeTimeout);
+      bloomResizeTimeout = setTimeout(() => {
+        // Bloom at half resolution for performance
+        bloomPass.resolution.set(Math.floor(currentW / 2), Math.floor(currentH / 2));
+        bloomResizeTimeout = null;
+      }, 300);
     },
 
     setParams(params) {
