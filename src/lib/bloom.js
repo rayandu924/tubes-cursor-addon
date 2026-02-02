@@ -76,12 +76,11 @@ export function createBloom(renderer, scene, camera, options = {}) {
       currentW = newW;
       currentH = newH;
 
-      // Resize render target and composer immediately (cheap)
+      // Resize render target and composer immediately
       renderTarget.setSize(newW, newH);
       composer.setSize(newW, newH);
 
-      // Delay bloom resize significantly (expensive operation)
-      // Bloom at wrong resolution is barely noticeable
+      // Delay bloom resize (bloom at wrong resolution is barely noticeable)
       if (bloomResizeTimeout) clearTimeout(bloomResizeTimeout);
       bloomResizeTimeout = setTimeout(() => {
         // Bloom at half resolution for performance

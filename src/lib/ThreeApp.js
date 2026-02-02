@@ -48,8 +48,8 @@ export class ThreeApp {
 
     // Camera constraints
     this.cameraMaxAspect = 1.5;
-    this.minPixelRatio = 2;
-    this.maxPixelRatio = 2;
+    this.minPixelRatio = 1;
+    this.maxPixelRatio = 1.5; // Lower = faster resize, bloom hides aliasing anyway
 
     // Clock for animation
     this.clock = new Clock();

@@ -73,8 +73,8 @@ export function TubesCursor(canvas, options = {}) {
   app.camera.position.set(0, 0, 5);
   app.camera.lookAt(0, 0, 0);
   app.cameraMaxAspect = 1.5;
-  app.minPixelRatio = 2;
-  app.maxPixelRatio = 2;
+  app.minPixelRatio = 1;
+  app.maxPixelRatio = 1.5; // Lower = faster resize, bloom hides aliasing
   app.resize();
 
   // Create tubes manager
