@@ -49,11 +49,6 @@ export function createBloom(renderer, scene, camera, options = {}) {
   const outputPass = new OutputPass();
   composer.addPass(outputPass);
 
-  // Track current size to avoid unnecessary resizes
-  let currentW = w;
-  let currentH = h;
-  let bloomResizeTimeout = null;
-
   return {
     composer,
     bloomPass,
@@ -70,23 +65,10 @@ export function createBloom(renderer, scene, camera, options = {}) {
       const newW = Math.floor(width * pr);
       const newH = Math.floor(height * pr);
 
-      // Skip if size hasn't changed (prevents redundant GPU allocations)
-      if (newW === currentW && newH === currentH) return;
-
-      currentW = newW;
-      currentH = newH;
-
-      // Resize render target and composer immediately
+      // Resize render target, composer, and bloom
       renderTarget.setSize(newW, newH);
       composer.setSize(newW, newH);
-
-      // Delay bloom resize (bloom at wrong resolution is barely noticeable)
-      if (bloomResizeTimeout) clearTimeout(bloomResizeTimeout);
-      bloomResizeTimeout = setTimeout(() => {
-        // Bloom at half resolution for performance
-        bloomPass.resolution.set(Math.floor(currentW / 2), Math.floor(currentH / 2));
-        bloomResizeTimeout = null;
-      }, 300);
+      bloomPass.resolution.set(Math.floor(newW / 2), Math.floor(newH / 2));
     },
 
     setParams(params) {

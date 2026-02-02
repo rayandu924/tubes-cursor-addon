@@ -67,27 +67,8 @@ export class ThreeApp {
     this._animationFrameId = null;
     this._isDisposed = false;
 
-    // Throttled resize handler for performance
-    this._resizeTimeout = null;
-    this._lastResizeTime = 0;
-    this._resizeThrottleMs = 100; // Max one resize per 100ms during active resize
-    this._boundResize = () => {
-      const now = Date.now();
-
-      // Clear any pending final resize
-      if (this._resizeTimeout) clearTimeout(this._resizeTimeout);
-
-      // Throttle: allow resize at most once per _resizeThrottleMs
-      if (now - this._lastResizeTime >= this._resizeThrottleMs) {
-        this._lastResizeTime = now;
-        this.resize();
-      }
-
-      // Always schedule a final resize after activity stops
-      this._resizeTimeout = setTimeout(() => {
-        this.resize();
-      }, 200);
-    };
+    // Simple resize handler
+    this._boundResize = () => this.resize();
 
     // Setup
     this.setupResize();
@@ -183,12 +164,6 @@ export class ThreeApp {
     if (this._animationFrameId) {
       cancelAnimationFrame(this._animationFrameId);
       this._animationFrameId = null;
-    }
-
-    // Clear resize timeout
-    if (this._resizeTimeout) {
-      clearTimeout(this._resizeTimeout);
-      this._resizeTimeout = null;
     }
 
     // Remove resize listener
