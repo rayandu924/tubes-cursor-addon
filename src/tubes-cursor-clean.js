@@ -32,11 +32,7 @@ function deepMerge(target, source) {
  */
 const DEFAULT_OPTIONS = {
   // Bloom effect (set to null to disable)
-  bloom: {
-    threshold: 0,
-    strength: 1.5,
-    radius: 0.5,
-  },
+  bloom: null,
 
   // Tubes configuration (passed to TubesManager)
   tubes: {},
@@ -57,6 +53,10 @@ const DEFAULT_OPTIONS = {
 export function TubesCursor(canvas, options = {}) {
   // Deep merge options to preserve nested defaults
   const config = deepMerge(DEFAULT_OPTIONS, options);
+
+  // DEBUG: Log the config
+  console.log('=== TubesCursor CONFIG ===', config);
+  console.log('Bloom:', config.bloom);
 
   // Create Three.js app
   const app = new ThreeApp({

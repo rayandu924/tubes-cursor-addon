@@ -26,17 +26,16 @@ export const DEFAULT_OPTIONS = {
   // Tube colors (null = random at init)
   colors: null,
 
-  // Tube radius (thickness)
-  radius: 0.03,
+  // Tube radius (thickness) - variable like original
+  minRadius: 0.005,
+  maxRadius: 0.05,
 
-  // Tube length (segments) - 48 is good balance of quality/performance
-  tubularSegments: 48,
+  // Tube length (segments) - variable like original
+  minTubularSegments: 32,
+  maxTubularSegments: 128,
 
-  // Length variation - exact value (0 = all same length, 10 = ±10 segments)
-  lengthVariation: 0,
-
-  // Radial segments (circumference detail) - 6 is enough with bloom
-  radialSegments: 6,
+  // Radial segments (circumference detail) - 8 for better metallic look
+  radialSegments: 8,
 
   // Material properties
   material: {
@@ -46,12 +45,12 @@ export const DEFAULT_OPTIONS = {
 
   // Lighting
   lights: {
-    intensity: 200,
+    intensity: 0,
     colors: null, // null = random at init
   },
 
   // Animation parameters
-  lerp: 0.5,      // Movement smoothness (higher = snappier)
+  lerp: 0.35,     // Movement smoothness (lower = smoother)
   noise: 0.05,    // Noise amplitude for organic movement
 };
 
@@ -94,6 +93,11 @@ export class TubesManager extends Group {
       this.options.lights.colors = [randomColor(), randomColor(), randomColor(), randomColor()];
     }
 
+    // DEBUG: Log the config being used
+    console.log('=== TubesManager CONFIG ===', this.options);
+    console.log('Light intensity:', this.options.lights.intensity);
+    console.log('Material:', this.options.material);
+
     // Initialize lights and tubes
     this.init();
   }
@@ -126,25 +130,23 @@ export class TubesManager extends Group {
   }
 
   /**
-   * Create all tubes with optional length variation
+   * Create all tubes with variable radius and length like original
    */
   initTubes() {
-    const { radius, tubularSegments, lengthVariation, radialSegments, count } = this.options;
+    const { minRadius, maxRadius, minTubularSegments, maxTubularSegments, radialSegments, count } = this.options;
 
     for (let i = 0; i < count; i++) {
       // Create material
       const material = new MeshStandardMaterial(this.options.material);
 
-      // Calculate length with variation (exact value)
-      // variation=10 means tubularSegments ± 10
-      let tubeLength = tubularSegments;
-      if (lengthVariation > 0) {
-        const delta = Math.round((Math.random() * 2 - 1) * lengthVariation);
-        tubeLength = Math.max(4, tubularSegments + delta); // minimum 4 segments
-      }
+      // Random radius between min and max (like original)
+      const radius = minRadius + Math.random() * (maxRadius - minRadius);
+
+      // Random tubular segments between min and max (like original)
+      const tubularSegments = Math.floor(minTubularSegments + Math.random() * (maxTubularSegments - minTubularSegments));
 
       // Create tube
-      this.tubes[i] = new Tube({ radius, tubularSegments: tubeLength, radialSegments }, material);
+      this.tubes[i] = new Tube({ radius, tubularSegments, radialSegments }, material);
 
       // Add to group
       this.add(this.tubes[i]);
@@ -191,16 +193,15 @@ export class TubesManager extends Group {
 
   /**
    * Rebuild all tube geometries with new segment count
-   * @param {number} tubularSegments - New segment count
+   * @param {number} tubularSegments - New segment count for all tubes
    */
   rebuildGeometries(tubularSegments) {
-    const radius = this.tubes[0]?.geometry.parameters.radius || this.options.radius;
-
     this.tubes.forEach((tube) => {
       // Store old geometry reference
       const oldGeometry = tube.geometry;
+      const radius = oldGeometry.parameters.radius;
 
-      // Create new geometry with new segment count
+      // Create new geometry with new segment count but keep original radius
       tube.geometry = new DynamicTubeGeometry(tubularSegments, radius, 8);
 
       // Copy curve reference
@@ -213,9 +214,6 @@ export class TubesManager extends Group {
       // Initial update
       tube.geometry.update();
     });
-
-    // Update stored option
-    this.options.tubularSegments = tubularSegments;
   }
 
   /**

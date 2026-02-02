@@ -13,6 +13,7 @@
   "description": "Custom Tubes Cursor addon for MyWallPaper",
   "devDependencies": {
     "js-beautify": "^1.15.4",
+    "lil-gui": "^0.21.0",
     "prettier": "^3.8.1",
     "vite": "^6.4.1",
     "vite-plugin-singlefile": "^2.3.0"
