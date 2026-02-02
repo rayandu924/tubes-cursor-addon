@@ -143,10 +143,8 @@ export function TubesCursor(canvas, options = {}) {
       tubesManager.target.y = radiusY * Math.sin(state.elapsed * config.sleepTimeScale2);
     }
 
-    // Freeze tubes when mouse button is held (allows "drawing")
-    if (!pointer.pressed) {
-      tubesManager.update(state);
-    }
+    // Update tubes animation
+    tubesManager.update(state);
   };
 
   // Return public API

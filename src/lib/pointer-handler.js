@@ -31,7 +31,6 @@ export function createPointerHandler(options) {
     position: new Vector2(),
     nPosition: new Vector2(),
     hover: false,
-    pressed: false,
     onEnter: options.onEnter || null,
     onMove: options.onMove || null,
     onClick: options.onClick || null,
@@ -80,8 +79,6 @@ export function createPointerHandler(options) {
 
   if (!isInitialized) {
     document.body.addEventListener('pointermove', onPointerMove, { passive: true });
-    document.body.addEventListener('pointerdown', onPointerDown);
-    document.body.addEventListener('pointerup', onPointerUp);
     document.body.addEventListener('pointerleave', onPointerLeave);
     document.body.addEventListener('click', onClick);
     window.addEventListener('resize', onWindowResize);
@@ -92,8 +89,6 @@ export function createPointerHandler(options) {
     handlers.delete(element);
     if (handlers.size === 0 && isInitialized) {
       document.body.removeEventListener('pointermove', onPointerMove);
-      document.body.removeEventListener('pointerdown', onPointerDown);
-      document.body.removeEventListener('pointerup', onPointerUp);
       document.body.removeEventListener('pointerleave', onPointerLeave);
       document.body.removeEventListener('click', onClick);
       window.removeEventListener('resize', onWindowResize);
@@ -109,21 +104,6 @@ function onPointerMove(event) {
   mouseY = event.clientY;
   for (const handler of handlers.values()) {
     handler._update();
-  }
-}
-
-function onPointerDown(event) {
-  // Only track left mouse button (button 0)
-  if (event.button !== 0) return;
-  for (const handler of handlers.values()) {
-    handler.pressed = true;
-  }
-}
-
-function onPointerUp(event) {
-  if (event.button !== 0) return;
-  for (const handler of handlers.values()) {
-    handler.pressed = false;
   }
 }
 
