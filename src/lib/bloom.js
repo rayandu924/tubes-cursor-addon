@@ -63,6 +63,9 @@ export function createBloom(renderer, scene, camera, options = {}) {
     },
 
     resize(width, height) {
+      // Skip invalid dimensions
+      if (width <= 0 || height <= 0) return;
+
       const pr = renderer.getPixelRatio();
       const w = Math.floor(width * pr);
       const h = Math.floor(height * pr);

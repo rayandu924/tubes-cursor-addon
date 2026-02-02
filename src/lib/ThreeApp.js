@@ -109,6 +109,12 @@ export class ThreeApp {
       height = window.innerHeight;
     }
 
+    // Skip if dimensions are invalid (prevents corrupted state)
+    if (width <= 0 || height <= 0) return;
+
+    // Skip if size hasn't changed
+    if (width === this.size.width && height === this.size.height) return;
+
     // Update size info
     this.size.width = width;
     this.size.height = height;
