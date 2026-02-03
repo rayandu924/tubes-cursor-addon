@@ -1,6 +1,6 @@
 {
   "name": "Tubes Cursor",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "sdkVersion": "2.13.0",
   "description": "Interactive 3D tubes that follow the cursor with colorful lights and glow effect",
   "author": "rayandu924",
@@ -10,6 +10,17 @@
     "systemEvents": ["viewport:resize", "visibility:change"]
   },
   "settings": {
+    "generalSection": {
+      "type": "section",
+      "label": "⚙️ General"
+    },
+    "passthrough": {
+      "type": "boolean",
+      "label": "Click Passthrough",
+      "description": "Allow clicks to pass through to elements below (recommended for cursor overlays)",
+      "default": true
+    },
+
     "tubesSection": {
       "type": "section",
       "label": "🎨 Tubes"

@@ -93,11 +93,6 @@ export class TubesManager extends Group {
       this.options.lights.colors = [randomColor(), randomColor(), randomColor(), randomColor()];
     }
 
-    // DEBUG: Log the config being used
-    console.log('=== TubesManager CONFIG ===', this.options);
-    console.log('Light intensity:', this.options.lights.intensity);
-    console.log('Material:', this.options.material);
-
     // Initialize lights and tubes
     this.init();
   }

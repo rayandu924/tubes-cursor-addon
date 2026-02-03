@@ -37,6 +37,10 @@ const DEFAULT_OPTIONS = {
   // Tubes configuration (passed to TubesManager)
   tubes: {},
 
+  // Passthrough mode - allows clicks to pass through to elements below
+  // Useful for cursor addons in iframes that overlay the whole page
+  passthrough: true,
+
   // Sleep mode animation (when cursor is outside)
   sleepRadiusX: 300,   // Horizontal radius of ellipse
   sleepRadiusY: 150,   // Vertical radius of ellipse
@@ -53,10 +57,6 @@ const DEFAULT_OPTIONS = {
 export function TubesCursor(canvas, options = {}) {
   // Deep merge options to preserve nested defaults
   const config = deepMerge(DEFAULT_OPTIONS, options);
-
-  // DEBUG: Log the config
-  console.log('=== TubesCursor CONFIG ===', config);
-  console.log('Bloom:', config.bloom);
 
   // Create Three.js app
   const app = new ThreeApp({
@@ -116,6 +116,7 @@ export function TubesCursor(canvas, options = {}) {
   // Pointer handler
   const pointer = createPointerHandler({
     domElement: canvas,
+    passthrough: config.passthrough,
     onMove() {
       // Cast ray from camera through mouse position
       raycaster.setFromCamera(pointer.nPosition, app.camera);

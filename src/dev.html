@@ -14,13 +14,9 @@
 <body>
   <canvas id="canvas"></canvas>
 
-  <script>console.log('=== PAGE LOADED ===');</script>
   <script type="module">
     import TubesCursor from './tubes-cursor-clean.js';
     import GUI from 'lil-gui';
-
-    console.log('=== DEV.HTML SCRIPT START ===');
-    console.log('GUI:', GUI);
 
     // Initialize
     const app = TubesCursor(document.getElementById('canvas'), {
@@ -39,7 +35,6 @@
     // GUI
     const gui = new GUI({ title: 'Tubes Controls' });
     gui.domElement.style.zIndex = '9999';
-    console.log('GUI created:', gui);
 
     // Lights
     const lightsFolder = gui.addFolder('Lights');

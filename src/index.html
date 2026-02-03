@@ -71,6 +71,7 @@
      */
     function buildOptions(settings) {
       return {
+        passthrough: settings.passthrough !== false, // Default to true
         bloom: settings.bloomEnabled ? {
           threshold: settings.bloomThreshold,
           strength: settings.bloomStrength,
@@ -346,6 +347,7 @@
         initApp({
           tubeCount: 16,
           tubeRadius: 0.03,
+          passthrough: true,
           tubeLength: 48,
           tubeLengthVariation: 0,
           metalness: 1,

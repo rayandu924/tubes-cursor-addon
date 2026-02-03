@@ -2,6 +2,10 @@
  * PointerHandler
  * Unified mouse/touch input handling for DOM elements
  * OPTIMIZED: Cached bounding rect, reduced function calls
+ *
+ * Supports passthrough mode for cursor addons in iframes:
+ * - Sets pointer-events: none on element (clicks pass through)
+ * - Listens to parent window for mouse events
  */
 
 import { Vector2 } from 'three';
@@ -11,12 +15,49 @@ const handlers = new Map();
 let mouseX = 0;
 let mouseY = 0;
 let isInitialized = false;
+let eventTarget = null;
+let passthroughMode = false;
+
+/**
+ * Get the event target (parent window or current document)
+ */
+function getEventTarget(passthrough) {
+  if (!passthrough) {
+    return { doc: document, win: window };
+  }
+
+  // Try to access parent window (for iframe passthrough)
+  try {
+    if (window.parent && window.parent !== window) {
+      // Check if we can access parent (same-origin policy)
+      const parentDoc = window.parent.document;
+      return { doc: parentDoc, win: window.parent };
+    }
+  } catch (e) {
+    console.warn('[PointerHandler] Cannot access parent window (cross-origin). Falling back to current window.');
+  }
+
+  return { doc: document, win: window };
+}
 
 /**
  * Create a pointer handler for a DOM element
+ * @param {Object} options
+ * @param {HTMLElement} options.domElement - The element to track
+ * @param {boolean} options.passthrough - Enable passthrough mode (pointer-events: none)
+ * @param {Function} options.onEnter - Called when pointer enters
+ * @param {Function} options.onMove - Called when pointer moves
+ * @param {Function} options.onClick - Called on click
+ * @param {Function} options.onLeave - Called when pointer leaves
  */
 export function createPointerHandler(options) {
   const element = options.domElement;
+  const passthrough = options.passthrough || false;
+
+  // Set pointer-events: none for passthrough mode
+  if (passthrough) {
+    element.style.pointerEvents = 'none';
+  }
 
   // Cache rect - update on resize
   let rect = element.getBoundingClientRect();
@@ -78,21 +119,30 @@ export function createPointerHandler(options) {
   handlers.set(element, handler);
 
   if (!isInitialized) {
-    document.body.addEventListener('pointermove', onPointerMove, { passive: true });
-    document.body.addEventListener('pointerleave', onPointerLeave);
-    document.body.addEventListener('click', onClick);
-    window.addEventListener('resize', onWindowResize);
+    passthroughMode = passthrough;
+    eventTarget = getEventTarget(passthrough);
+
+    eventTarget.doc.addEventListener('pointermove', onPointerMove, { passive: true });
+    eventTarget.doc.addEventListener('pointerleave', onPointerLeave);
+    // Don't listen to clicks in passthrough mode (they go to parent)
+    if (!passthrough) {
+      eventTarget.doc.addEventListener('click', onClick);
+    }
+    eventTarget.win.addEventListener('resize', onWindowResize);
     isInitialized = true;
   }
 
   handler.dispose = () => {
     handlers.delete(element);
-    if (handlers.size === 0 && isInitialized) {
-      document.body.removeEventListener('pointermove', onPointerMove);
-      document.body.removeEventListener('pointerleave', onPointerLeave);
-      document.body.removeEventListener('click', onClick);
-      window.removeEventListener('resize', onWindowResize);
+    if (handlers.size === 0 && isInitialized && eventTarget) {
+      eventTarget.doc.removeEventListener('pointermove', onPointerMove);
+      eventTarget.doc.removeEventListener('pointerleave', onPointerLeave);
+      if (!passthroughMode) {
+        eventTarget.doc.removeEventListener('click', onClick);
+      }
+      eventTarget.win.removeEventListener('resize', onWindowResize);
       isInitialized = false;
+      eventTarget = null;
     }
   };
 
