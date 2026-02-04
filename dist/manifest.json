@@ -1,7 +1,9 @@
 {
   "name": "Tubes Cursor",
-  "version": "2.0.0",
+  "version": "2.6.1",
   "sdkVersion": "2.13.0",
+  "type": "cursor",
+  "cursorExport": "initializeCursor",
   "description": "Interactive 3D tubes that follow the cursor with colorful lights and glow effect",
   "author": "rayandu924",
   "categories": ["cursor", "3d", "interactive"],
@@ -10,6 +12,17 @@
     "systemEvents": ["viewport:resize", "visibility:change"]
   },
   "settings": {
+    "generalSection": {
+      "type": "section",
+      "label": "⚙️ General"
+    },
+    "passthrough": {
+      "type": "boolean",
+      "label": "Click Passthrough",
+      "description": "Allow clicks to pass through to elements below (recommended for cursor overlays)",
+      "default": true
+    },
+
     "tubesSection": {
       "type": "section",
       "label": "🎨 Tubes"
@@ -68,12 +81,12 @@
     },
     "smoothness": {
       "type": "range",
-      "label": "Smoothness",
-      "description": "How quickly tubes follow the cursor",
-      "default": 0.5,
-      "min": 0.05,
-      "max": 1,
-      "step": 0.05
+      "label": "Smoothness (Lerp)",
+      "description": "How quickly tubes follow the cursor (lower = smoother)",
+      "default": 0.35,
+      "min": 0.01,
+      "max": 0.5,
+      "step": 0.01
     },
     "noise": {
       "type": "range",
@@ -117,7 +130,7 @@
     "lightIntensity": {
       "type": "range",
       "label": "Light Intensity",
-      "default": 200,
+      "default": 40,
       "min": 0,
       "max": 500,
       "step": 10
@@ -155,7 +168,7 @@
     "bloomEnabled": {
       "type": "boolean",
       "label": "Enable Bloom",
-      "default": true
+      "default": false
     },
     "bloomThreshold": {
       "type": "range",
@@ -168,17 +181,17 @@
     "bloomStrength": {
       "type": "range",
       "label": "Strength",
-      "default": 5,
+      "default": 0.3,
       "min": 0,
-      "max": 10,
+      "max": 3,
       "step": 0.1
     },
     "bloomRadius": {
       "type": "range",
       "label": "Radius",
-      "default": 1.5,
+      "default": 0.2,
       "min": 0,
-      "max": 3,
+      "max": 2,
       "step": 0.1
     },
 
