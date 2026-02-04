@@ -1,6 +1,6 @@
 {
   "name": "Tubes Cursor",
-  "version": "2.15.0",
+  "version": "3.0.0",
   "sdkVersion": "2.16.0",
   "type": "cursor",
   "cursorExport": "initializeCursor",
@@ -12,17 +12,6 @@
     "systemEvents": ["viewport:resize", "visibility:change"]
   },
   "settings": {
-    "generalSection": {
-      "type": "section",
-      "label": "⚙️ General"
-    },
-    "passthrough": {
-      "type": "boolean",
-      "label": "Click Passthrough",
-      "description": "Allow clicks to pass through to elements below (recommended for cursor overlays)",
-      "default": true
-    },
-
     "tubesSection": {
       "type": "section",
       "label": "🎨 Tubes"

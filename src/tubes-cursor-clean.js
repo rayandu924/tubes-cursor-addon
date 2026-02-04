@@ -113,10 +113,9 @@ export function TubesCursor(canvas, options = {}) {
   // Intersection point
   const intersectionPoint = new Vector3();
 
-  // Pointer handler
+  // Pointer handler - receives mouse position via postMessage from parent
   const pointer = createPointerHandler({
     domElement: canvas,
-    passthrough: config.passthrough,
     onMove() {
       // Cast ray from camera through mouse position
       raycaster.setFromCamera(pointer.nPosition, app.camera);

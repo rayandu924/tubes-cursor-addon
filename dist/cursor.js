@@ -26766,131 +26766,96 @@ const handlers = /* @__PURE__ */ new Map();
 let mouseX = 0;
 let mouseY = 0;
 let isInitialized = false;
-let eventTarget = null;
-let passthroughMode = false;
-function getEventTarget(passthrough) {
-  if (!passthrough) {
-    return { doc: document, win: window };
-  }
-  try {
-    if (window.parent && window.parent !== window) {
-      const parentDoc = window.parent.document;
-      return { doc: parentDoc, win: window.parent };
-    }
-  } catch (e) {
-    console.warn("[PointerHandler] Cannot access parent window (cross-origin). Falling back to current window.");
-  }
-  return { doc: document, win: window };
-}
+let viewportWidth = window.innerWidth;
+let viewportHeight = window.innerHeight;
 function createPointerHandler(options) {
   const element = options.domElement;
-  const passthrough = options.passthrough || false;
   let rect = element.getBoundingClientRect();
   let rectLeft = rect.left;
   let rectTop = rect.top;
   let rectWidth = rect.width;
   let rectHeight = rect.height;
-  let rectRight = rectLeft + rectWidth;
-  let rectBottom = rectTop + rectHeight;
   const handler = {
     position: new Vector2(),
     nPosition: new Vector2(),
-    hover: false,
-    onEnter: options.onEnter || null,
+    hover: true,
+    // Always hovering in cursor mode (we always render)
     onMove: options.onMove || null,
-    onClick: options.onClick || null,
-    onLeave: options.onLeave || null,
     // Update cached rect (call on resize)
     updateRect() {
       rect = element.getBoundingClientRect();
       rectLeft = rect.left;
       rectTop = rect.top;
-      rectWidth = rect.width;
-      rectHeight = rect.height;
-      rectRight = rectLeft + rectWidth;
-      rectBottom = rectTop + rectHeight;
+      rectWidth = rect.width || viewportWidth;
+      rectHeight = rect.height || viewportHeight;
     },
-    // Fast inline check and update
+    // Update from received position
     _update() {
-      const inside = mouseX >= rectLeft && mouseX <= rectRight && mouseY >= rectTop && mouseY <= rectBottom;
-      if (inside) {
-        const px2 = mouseX - rectLeft;
-        const py2 = mouseY - rectTop;
-        handler.position.x = px2;
-        handler.position.y = py2;
-        handler.nPosition.x = px2 / rectWidth * 2 - 1;
-        handler.nPosition.y = -(py2 / rectHeight) * 2 + 1;
-        if (!handler.hover) {
-          handler.hover = true;
-          if (handler.onEnter) handler.onEnter(handler);
-        }
-        if (handler.onMove) handler.onMove(handler);
-      } else if (handler.hover) {
-        handler.hover = false;
-        if (handler.onLeave) handler.onLeave(handler);
-      }
-      return inside;
+      const px2 = mouseX - rectLeft;
+      const py2 = mouseY - rectTop;
+      handler.position.x = px2;
+      handler.position.y = py2;
+      handler.nPosition.x = px2 / rectWidth * 2 - 1;
+      handler.nPosition.y = -(py2 / rectHeight) * 2 + 1;
+      if (handler.onMove) handler.onMove(handler);
     }
   };
   handlers.set(element, handler);
   if (!isInitialized) {
-    passthroughMode = passthrough;
-    eventTarget = getEventTarget(passthrough);
-    eventTarget.doc.addEventListener("pointermove", onPointerMove, { passive: true });
-    eventTarget.doc.addEventListener("pointerleave", onPointerLeave);
-    if (!passthrough) {
-      eventTarget.doc.addEventListener("click", onClick);
-    }
-    eventTarget.win.addEventListener("resize", onWindowResize);
+    window.addEventListener("message", onMessage);
+    window.addEventListener("resize", onWindowResize);
     isInitialized = true;
   }
   handler.dispose = () => {
     handlers.delete(element);
-    if (handlers.size === 0 && isInitialized && eventTarget) {
-      eventTarget.doc.removeEventListener("pointermove", onPointerMove);
-      eventTarget.doc.removeEventListener("pointerleave", onPointerLeave);
-      if (!passthroughMode) {
-        eventTarget.doc.removeEventListener("click", onClick);
-      }
-      eventTarget.win.removeEventListener("resize", onWindowResize);
+    if (handlers.size === 0 && isInitialized) {
+      window.removeEventListener("message", onMessage);
+      window.removeEventListener("resize", onWindowResize);
       isInitialized = false;
-      eventTarget = null;
     }
   };
   return handler;
 }
-function onPointerMove(event) {
-  mouseX = event.clientX;
-  mouseY = event.clientY;
-  for (const handler of handlers.values()) {
-    handler._update();
+function onMessage(event) {
+  const data = event.data;
+  if (!data || typeof data !== "object") return;
+  switch (data.type) {
+    case "CURSOR_POSITION":
+      mouseX = data.x;
+      mouseY = data.y;
+      for (const handler of handlers.values()) {
+        handler._update();
+      }
+      break;
+    case "CURSOR_INIT":
+      if (data.position) {
+        mouseX = data.position.x;
+        mouseY = data.position.y;
+      }
+      if (data.viewport) {
+        viewportWidth = data.viewport.width;
+        viewportHeight = data.viewport.height;
+      }
+      for (const handler of handlers.values()) {
+        handler.updateRect();
+        handler._update();
+      }
+      break;
+    case "VIEWPORT_RESIZE":
+      viewportWidth = data.width;
+      viewportHeight = data.height;
+      for (const handler of handlers.values()) {
+        handler.updateRect();
+      }
+      break;
   }
 }
-function onClick(event) {
-  mouseX = event.clientX;
-  mouseY = event.clientY;
-  for (const handler of handlers.values()) {
-    if (handler._update() && handler.onClick) {
-      handler.onClick(handler);
-    }
-  }
-}
-function onPointerLeave() {
-  for (const handler of handlers.values()) {
-    if (handler.hover) {
-      handler.hover = false;
-      if (handler.onLeave) handler.onLeave(handler);
-    }
-  }
-}
-let resizeTimeout = null;
 function onWindowResize() {
-  if (resizeTimeout) clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => {
-    for (const handler of handlers.values()) {
-      handler.updateRect();
-    }
-  }, 100);
+  viewportWidth = window.innerWidth;
+  viewportHeight = window.innerHeight;
+  for (const handler of handlers.values()) {
+    handler.updateRect();
+  }
 }
 const CopyShader = {
   name: "CopyShader",
@@ -28066,7 +28031,6 @@ function TubesCursor(canvas, options = {}) {
   const intersectionPoint = new Vector3();
   const pointer = createPointerHandler({
     domElement: canvas,
-    passthrough: config.passthrough,
     onMove() {
       raycaster.setFromCamera(pointer.nPosition, app.camera);
       app.camera.getWorldDirection(intersectionPlane.normal);

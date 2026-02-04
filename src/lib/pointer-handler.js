@@ -1,11 +1,15 @@
 /**
  * PointerHandler
- * Unified mouse/touch input handling for DOM elements
- * OPTIMIZED: Cached bounding rect, reduced function calls
+ * Receives mouse position from parent window via postMessage
  *
- * Supports passthrough mode for cursor addons in iframes:
- * - Sets pointer-events: none on element (clicks pass through)
- * - Listens to parent window for mouse events
+ * SECURITY: The cursor addon runs in an iframe with pointer-events: none.
+ * It cannot track mouse events directly. Instead, the parent window
+ * tracks mouse position and sends updates via postMessage.
+ *
+ * Message types:
+ * - CURSOR_POSITION: { x, y } - Mouse position update
+ * - CURSOR_INIT: { settings, viewport, position } - Initial configuration
+ * - VIEWPORT_RESIZE: { width, height } - Viewport size change
  */
 
 import { Vector2 } from 'three';
@@ -15,48 +19,17 @@ const handlers = new Map();
 let mouseX = 0;
 let mouseY = 0;
 let isInitialized = false;
-let eventTarget = null;
-let passthroughMode = false;
-
-/**
- * Get the event target (parent window or current document)
- */
-function getEventTarget(passthrough) {
-  if (!passthrough) {
-    return { doc: document, win: window };
-  }
-
-  // Try to access parent window (for iframe passthrough)
-  try {
-    if (window.parent && window.parent !== window) {
-      // Check if we can access parent (same-origin policy)
-      const parentDoc = window.parent.document;
-      return { doc: parentDoc, win: window.parent };
-    }
-  } catch (e) {
-    console.warn('[PointerHandler] Cannot access parent window (cross-origin). Falling back to current window.');
-  }
-
-  return { doc: document, win: window };
-}
+let viewportWidth = window.innerWidth;
+let viewportHeight = window.innerHeight;
 
 /**
  * Create a pointer handler for a DOM element
  * @param {Object} options
  * @param {HTMLElement} options.domElement - The element to track
- * @param {boolean} options.passthrough - Enable passthrough mode (pointer-events: none)
- * @param {Function} options.onEnter - Called when pointer enters
  * @param {Function} options.onMove - Called when pointer moves
- * @param {Function} options.onClick - Called on click
- * @param {Function} options.onLeave - Called when pointer leaves
  */
 export function createPointerHandler(options) {
   const element = options.domElement;
-  const passthrough = options.passthrough || false;
-
-  // NOTE: pointer-events is now controlled by the host (CursorCanvasOverlay)
-  // The addon should NOT modify pointer-events for security reasons
-  // The host sets pointer-events: none on the canvas to allow click pass-through
 
   // Cache rect - update on resize
   let rect = element.getBoundingClientRect();
@@ -70,120 +43,105 @@ export function createPointerHandler(options) {
   const handler = {
     position: new Vector2(),
     nPosition: new Vector2(),
-    hover: false,
-    onEnter: options.onEnter || null,
+    hover: true, // Always hovering in cursor mode (we always render)
     onMove: options.onMove || null,
-    onClick: options.onClick || null,
-    onLeave: options.onLeave || null,
 
     // Update cached rect (call on resize)
     updateRect() {
       rect = element.getBoundingClientRect();
       rectLeft = rect.left;
       rectTop = rect.top;
-      rectWidth = rect.width;
-      rectHeight = rect.height;
+      rectWidth = rect.width || viewportWidth;
+      rectHeight = rect.height || viewportHeight;
       rectRight = rectLeft + rectWidth;
       rectBottom = rectTop + rectHeight;
     },
 
-    // Fast inline check and update
+    // Update from received position
     _update() {
-      const inside = mouseX >= rectLeft && mouseX <= rectRight &&
-                     mouseY >= rectTop && mouseY <= rectBottom;
+      // Update positions
+      const px = mouseX - rectLeft;
+      const py = mouseY - rectTop;
+      handler.position.x = px;
+      handler.position.y = py;
+      handler.nPosition.x = (px / rectWidth) * 2 - 1;
+      handler.nPosition.y = -(py / rectHeight) * 2 + 1;
 
-      if (inside) {
-        // Update positions inline
-        const px = mouseX - rectLeft;
-        const py = mouseY - rectTop;
-        handler.position.x = px;
-        handler.position.y = py;
-        handler.nPosition.x = (px / rectWidth) * 2 - 1;
-        handler.nPosition.y = -(py / rectHeight) * 2 + 1;
-
-        if (!handler.hover) {
-          handler.hover = true;
-          if (handler.onEnter) handler.onEnter(handler);
-        }
-        if (handler.onMove) handler.onMove(handler);
-      } else if (handler.hover) {
-        handler.hover = false;
-        if (handler.onLeave) handler.onLeave(handler);
-      }
-
-      return inside;
+      if (handler.onMove) handler.onMove(handler);
     }
   };
 
   handlers.set(element, handler);
 
   if (!isInitialized) {
-    passthroughMode = passthrough;
-    eventTarget = getEventTarget(passthrough);
-
-    eventTarget.doc.addEventListener('pointermove', onPointerMove, { passive: true });
-    eventTarget.doc.addEventListener('pointerleave', onPointerLeave);
-    // Don't listen to clicks in passthrough mode (they go to parent)
-    if (!passthrough) {
-      eventTarget.doc.addEventListener('click', onClick);
-    }
-    eventTarget.win.addEventListener('resize', onWindowResize);
+    // Listen for postMessage from parent
+    window.addEventListener('message', onMessage);
+    window.addEventListener('resize', onWindowResize);
     isInitialized = true;
   }
 
   handler.dispose = () => {
     handlers.delete(element);
-    if (handlers.size === 0 && isInitialized && eventTarget) {
-      eventTarget.doc.removeEventListener('pointermove', onPointerMove);
-      eventTarget.doc.removeEventListener('pointerleave', onPointerLeave);
-      if (!passthroughMode) {
-        eventTarget.doc.removeEventListener('click', onClick);
-      }
-      eventTarget.win.removeEventListener('resize', onWindowResize);
+    if (handlers.size === 0 && isInitialized) {
+      window.removeEventListener('message', onMessage);
+      window.removeEventListener('resize', onWindowResize);
       isInitialized = false;
-      eventTarget = null;
     }
   };
 
   return handler;
 }
 
-function onPointerMove(event) {
-  mouseX = event.clientX;
-  mouseY = event.clientY;
-  for (const handler of handlers.values()) {
-    handler._update();
+/**
+ * Handle messages from parent window
+ */
+function onMessage(event) {
+  const data = event.data;
+  if (!data || typeof data !== 'object') return;
+
+  switch (data.type) {
+    case 'CURSOR_POSITION':
+      mouseX = data.x;
+      mouseY = data.y;
+      for (const handler of handlers.values()) {
+        handler._update();
+      }
+      break;
+
+    case 'CURSOR_INIT':
+      if (data.position) {
+        mouseX = data.position.x;
+        mouseY = data.position.y;
+      }
+      if (data.viewport) {
+        viewportWidth = data.viewport.width;
+        viewportHeight = data.viewport.height;
+      }
+      for (const handler of handlers.values()) {
+        handler.updateRect();
+        handler._update();
+      }
+      break;
+
+    case 'VIEWPORT_RESIZE':
+      viewportWidth = data.width;
+      viewportHeight = data.height;
+      for (const handler of handlers.values()) {
+        handler.updateRect();
+      }
+      break;
   }
 }
 
-function onClick(event) {
-  mouseX = event.clientX;
-  mouseY = event.clientY;
-  for (const handler of handlers.values()) {
-    if (handler._update() && handler.onClick) {
-      handler.onClick(handler);
-    }
-  }
-}
-
-function onPointerLeave() {
-  for (const handler of handlers.values()) {
-    if (handler.hover) {
-      handler.hover = false;
-      if (handler.onLeave) handler.onLeave(handler);
-    }
-  }
-}
-
-// Debounced resize for pointer handler
-let resizeTimeout = null;
+/**
+ * Handle local resize (backup)
+ */
 function onWindowResize() {
-  if (resizeTimeout) clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => {
-    for (const handler of handlers.values()) {
-      handler.updateRect();
-    }
-  }, 100);
+  viewportWidth = window.innerWidth;
+  viewportHeight = window.innerHeight;
+  for (const handler of handlers.values()) {
+    handler.updateRect();
+  }
 }
 
 export default createPointerHandler;
