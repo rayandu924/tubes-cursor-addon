@@ -5,7 +5,7 @@
  *
  * Supports passthrough mode for cursor addons in iframes:
  * - Sets pointer-events: none on element (clicks pass through)
- * - Listens to parent window for mouse events
+ * - Listens to MyWallpaper SDK cursor:move events for position
  */
 
 import { Vector2 } from 'three';
@@ -15,30 +15,7 @@ const handlers = new Map();
 let mouseX = 0;
 let mouseY = 0;
 let isInitialized = false;
-let eventTarget = null;
 let passthroughMode = false;
-
-/**
- * Get the event target (parent window or current document)
- */
-function getEventTarget(passthrough) {
-  if (!passthrough) {
-    return { doc: document, win: window };
-  }
-
-  // Try to access parent window (for iframe passthrough)
-  try {
-    if (window.parent && window.parent !== window) {
-      // Check if we can access parent (same-origin policy)
-      const parentDoc = window.parent.document;
-      return { doc: parentDoc, win: window.parent };
-    }
-  } catch (e) {
-    console.warn('[PointerHandler] Cannot access parent window (cross-origin). Falling back to current window.');
-  }
-
-  return { doc: document, win: window };
-}
 
 /**
  * Create a pointer handler for a DOM element
@@ -124,33 +101,89 @@ export function createPointerHandler(options) {
 
   if (!isInitialized) {
     passthroughMode = passthrough;
-    eventTarget = getEventTarget(passthrough);
 
-    eventTarget.doc.addEventListener('pointermove', onPointerMove, { passive: true });
-    eventTarget.doc.addEventListener('pointerleave', onPointerLeave);
-    // Don't listen to clicks in passthrough mode (they go to parent)
-    if (!passthrough) {
-      eventTarget.doc.addEventListener('click', onClick);
+    if (passthrough) {
+      // PASSTHROUGH MODE: Listen for cursor:move events from MyWallpaper SDK
+      // The parent window sends cursor position via postMessage since we can't
+      // receive mouse events with pointer-events: none
+      initSdkCursorTracking();
+    } else {
+      // NORMAL MODE: Listen to native mouse events
+      document.addEventListener('pointermove', onPointerMove, { passive: true });
+      document.addEventListener('pointerleave', onPointerLeave);
+      document.addEventListener('click', onClick);
     }
-    eventTarget.win.addEventListener('resize', onWindowResize);
+
+    window.addEventListener('resize', onWindowResize);
     isInitialized = true;
   }
 
   handler.dispose = () => {
     handlers.delete(element);
-    if (handlers.size === 0 && isInitialized && eventTarget) {
-      eventTarget.doc.removeEventListener('pointermove', onPointerMove);
-      eventTarget.doc.removeEventListener('pointerleave', onPointerLeave);
-      if (!passthroughMode) {
-        eventTarget.doc.removeEventListener('click', onClick);
+    if (handlers.size === 0 && isInitialized) {
+      if (passthroughMode) {
+        cleanupSdkCursorTracking();
+      } else {
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerleave', onPointerLeave);
+        document.removeEventListener('click', onClick);
       }
-      eventTarget.win.removeEventListener('resize', onWindowResize);
+      window.removeEventListener('resize', onWindowResize);
       isInitialized = false;
-      eventTarget = null;
     }
   };
 
   return handler;
+}
+
+/**
+ * Initialize SDK cursor tracking via MyWallpaper API
+ * Uses the cursor:move system event for addons with pointer-events: none
+ */
+function initSdkCursorTracking() {
+  // Check if MyWallpaper SDK is available
+  if (typeof window.MyWallpaper !== 'undefined' && window.MyWallpaper.onEvent) {
+    console.log('[PointerHandler] Using MyWallpaper SDK cursor:move event');
+    window.MyWallpaper.onEvent('cursor:move', onSdkCursorMove);
+  } else {
+    // SDK not ready yet, wait for it
+    console.log('[PointerHandler] Waiting for MyWallpaper SDK...');
+    const checkInterval = setInterval(() => {
+      if (typeof window.MyWallpaper !== 'undefined' && window.MyWallpaper.onEvent) {
+        console.log('[PointerHandler] MyWallpaper SDK ready, subscribing to cursor:move');
+        window.MyWallpaper.onEvent('cursor:move', onSdkCursorMove);
+        clearInterval(checkInterval);
+      }
+    }, 100);
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      if (typeof window.MyWallpaper === 'undefined') {
+        console.warn('[PointerHandler] MyWallpaper SDK not available, cursor tracking disabled');
+      }
+    }, 5000);
+  }
+}
+
+/**
+ * Cleanup SDK cursor tracking
+ */
+function cleanupSdkCursorTracking() {
+  if (typeof window.MyWallpaper !== 'undefined' && window.MyWallpaper.offEvent) {
+    window.MyWallpaper.offEvent('cursor:move', onSdkCursorMove);
+  }
+}
+
+/**
+ * Handle cursor position from SDK
+ */
+function onSdkCursorMove(data) {
+  mouseX = data.x;
+  mouseY = data.y;
+  for (const handler of handlers.values()) {
+    handler._update();
+  }
 }
 
 function onPointerMove(event) {
