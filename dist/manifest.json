@@ -2,6 +2,8 @@
   "name": "Tubes Cursor",
   "version": "2.6.1",
   "sdkVersion": "2.13.0",
+  "type": "cursor",
+  "cursorExport": "initializeCursor",
   "description": "Interactive 3D tubes that follow the cursor with colorful lights and glow effect",
   "author": "rayandu924",
   "categories": ["cursor", "3d", "interactive"],

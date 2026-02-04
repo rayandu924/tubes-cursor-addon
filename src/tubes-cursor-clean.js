@@ -171,4 +171,84 @@ export function TubesCursor(canvas, options = {}) {
   };
 }
 
+/**
+ * Standard initialization function for the generic cursor system
+ *
+ * @param {HTMLCanvasElement} canvas - Canvas to render to
+ * @param {Object} options - Configuration options from settings
+ * @returns {Object} Cursor instance with dispose() and setConfig() methods
+ */
+export function initializeCursor(canvas, options = {}) {
+  // Build cursor configuration from addon settings
+  const cursorConfig = {
+    passthrough: options.passthrough !== false,
+    bloom: options.bloomEnabled ? {
+      threshold: options.bloomThreshold || 0,
+      strength: options.bloomStrength || 0.3,
+      radius: options.bloomRadius || 0.2,
+    } : null,
+    tubes: {
+      count: options.tubeCount || 16,
+      minRadius: options.minRadius || 0.005,
+      maxRadius: options.maxRadius || 0.05,
+      minTubularSegments: options.minTubularSegments || 32,
+      maxTubularSegments: options.maxTubularSegments || 128,
+      radialSegments: options.radialSegments || 8,
+      material: {
+        metalness: options.metalness || 1,
+        roughness: options.roughness || 0.25,
+      },
+      lights: {
+        intensity: options.lightIntensity || 40,
+        colors: [
+          options.lightColor1 || '#83f36e',
+          options.lightColor2 || '#fe8a2e',
+          options.lightColor3 || '#ff008a',
+          options.lightColor4 || '#60aed5',
+        ],
+      },
+      colors: [
+        options.tubeColor1 || '#f967fb',
+        options.tubeColor2 || '#ff6b6b',
+        options.tubeColor3 || '#53bc28',
+      ],
+      lerp: options.smoothness || 0.35,
+      noise: options.noise || 0.05,
+    },
+    sleepRadiusX: options.sleepRadiusX || 300,
+    sleepRadiusY: options.sleepRadiusY || 150,
+    sleepTimeScale1: options.sleepSpeedX || 1,
+    sleepTimeScale2: options.sleepSpeedY || 2,
+  };
+
+  // Initialize TubesCursor instance
+  const instance = TubesCursor(canvas, cursorConfig);
+
+  // Return standardized cursor interface
+  return {
+    /**
+     * Cleanup and dispose resources
+     */
+    dispose() {
+      if (instance?.dispose) {
+        instance.dispose();
+      }
+    },
+
+    /**
+     * Update cursor configuration (hot-reload support)
+     */
+    setConfig(newOptions) {
+      // For future enhancement: allow real-time config updates
+      // without recreating the entire instance
+      if (typeof console !== 'undefined') {
+        console.log('[TubesCursor] Config update requested', newOptions);
+      }
+    },
+  };
+}
+
+// Export for global access
+window.initializeCursor = initializeCursor;
+
 export default TubesCursor;
