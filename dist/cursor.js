@@ -26785,9 +26785,6 @@ function getEventTarget(passthrough) {
 function createPointerHandler(options) {
   const element = options.domElement;
   const passthrough = options.passthrough || false;
-  if (passthrough) {
-    element.style.pointerEvents = "none";
-  }
   let rect = element.getBoundingClientRect();
   let rectLeft = rect.left;
   let rectTop = rect.top;

@@ -54,12 +54,9 @@ export function createPointerHandler(options) {
   const element = options.domElement;
   const passthrough = options.passthrough || false;
 
-  // Set pointer-events: none for passthrough mode
-  // This allows clicks to pass through to elements below
-  // Note: Only set on the canvas element, NOT on body/html (that would block all clicks)
-  if (passthrough) {
-    element.style.pointerEvents = 'none';
-  }
+  // NOTE: pointer-events is now controlled by the host (CursorCanvasOverlay)
+  // The addon should NOT modify pointer-events for security reasons
+  // The host sets pointer-events: none on the canvas to allow click pass-through
 
   // Cache rect - update on resize
   let rect = element.getBoundingClientRect();
