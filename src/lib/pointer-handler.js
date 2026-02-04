@@ -55,12 +55,10 @@ export function createPointerHandler(options) {
   const passthrough = options.passthrough || false;
 
   // Set pointer-events: none for passthrough mode
-  // This allows clicks to pass through to elements below (in parent window)
+  // This allows clicks to pass through to elements below
+  // Note: Only set on the canvas element, NOT on body/html (that would block all clicks)
   if (passthrough) {
     element.style.pointerEvents = 'none';
-    // Also set on body and html to ensure full passthrough
-    document.body.style.pointerEvents = 'none';
-    document.documentElement.style.pointerEvents = 'none';
   }
 
   // Cache rect - update on resize

@@ -26787,8 +26787,6 @@ function createPointerHandler(options) {
   const passthrough = options.passthrough || false;
   if (passthrough) {
     element.style.pointerEvents = "none";
-    document.body.style.pointerEvents = "none";
-    document.documentElement.style.pointerEvents = "none";
   }
   let rect = element.getBoundingClientRect();
   let rectLeft = rect.left;
