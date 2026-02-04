@@ -1,7 +1,7 @@
 {
   "name": "Tubes Cursor",
-  "version": "2.9.0",
-  "sdkVersion": "2.14.0",
+  "version": "2.10.0",
+  "sdkVersion": "2.15.0",
   "type": "widget",
   "categories": ["cursor", "3d", "interactive"],
   "description": "Interactive 3D tubes that follow the cursor with colorful lights and glow effect",
