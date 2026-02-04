@@ -1,10 +1,12 @@
 {
   "name": "tubes-cursor-addon",
-  "version": "1.0.0",
+  "version": "2.12.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build",
+    "build": "vite build && npm run build:cursor",
+    "build:html": "vite build",
+    "build:cursor": "BUILD_CURSOR=true vite build",
     "preview": "vite preview"
   },
   "keywords": [],
@@ -15,6 +17,7 @@
     "js-beautify": "^1.15.4",
     "lil-gui": "^0.21.0",
     "prettier": "^3.8.1",
+    "terser": "^5.46.0",
     "vite": "^6.4.1",
     "vite-plugin-singlefile": "^2.3.0"
   },
