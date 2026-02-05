@@ -1,6 +1,6 @@
 {
   "name": "Tubes Cursor",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "sdkVersion": "2.17.0",
   "type": "cursor",
   "cursorExport": "initializeCursor",
