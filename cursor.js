@@ -26227,16 +26227,72 @@ class DynamicTubeGeometry extends TubeGeometry {
     const curve = new CatmullRomCurve3(points);
     super(curve, tubularSegments, radius, radialSegments, false);
     this.curve = curve;
+    const segCount = tubularSegments + 1;
+    this._tangents = new Array(segCount);
+    this._normals = new Array(segCount);
+    this._binormals = new Array(segCount);
+    for (let i = 0; i < segCount; i++) {
+      this._tangents[i] = new Vector3();
+      this._normals[i] = new Vector3();
+      this._binormals[i] = new Vector3();
+    }
   }
   /**
    * Update geometry based on current curve points
    */
   update() {
-    updateTubeGeometry(this);
+    computeParallelTransportFrames(
+      this.curve.points,
+      this._tangents,
+      this._normals,
+      this._binormals
+    );
+    updateTubeVertices(this);
   }
 }
-new Vector3();
-new Vector3();
+const _axis = new Vector3();
+function computeParallelTransportFrames(points, tangents, normals, binormals) {
+  const len = points.length;
+  tangents[0].subVectors(points[1], points[0]).normalize();
+  for (let i = 1; i < len - 1; i++) {
+    tangents[i].subVectors(points[i + 1], points[i - 1]).normalize();
+  }
+  tangents[len - 1].subVectors(points[len - 1], points[len - 2]).normalize();
+  const t0 = tangents[0];
+  const ax = Math.abs(t0.x), ay = Math.abs(t0.y), az = Math.abs(t0.z);
+  if (ax <= ay && ax <= az) {
+    _axis.set(1, 0, 0);
+  } else if (ay <= az) {
+    _axis.set(0, 1, 0);
+  } else {
+    _axis.set(0, 0, 1);
+  }
+  normals[0].crossVectors(t0, _axis).normalize();
+  binormals[0].crossVectors(t0, normals[0]);
+  for (let i = 1; i < len; i++) {
+    normals[i].copy(normals[i - 1]);
+    _axis.crossVectors(tangents[i - 1], tangents[i]);
+    const sinA = _axis.length();
+    if (sinA > 1e-6) {
+      const invSin = 1 / sinA;
+      const kx = _axis.x * invSin;
+      const ky = _axis.y * invSin;
+      const kz = _axis.z * invSin;
+      const cosA = tangents[i - 1].dot(tangents[i]);
+      const oneMinusCos = 1 - cosA;
+      const n = normals[i];
+      const nx = n.x, ny = n.y, nz = n.z;
+      const cx = ky * nz - kz * ny;
+      const cy = kz * nx - kx * nz;
+      const cz = kx * ny - ky * nx;
+      const d = kx * nx + ky * ny + kz * nz;
+      n.x = nx * cosA + cx * sinA + kx * d * oneMinusCos;
+      n.y = ny * cosA + cy * sinA + ky * d * oneMinusCos;
+      n.z = nz * cosA + cz * sinA + kz * d * oneMinusCos;
+    }
+    binormals[i].crossVectors(tangents[i], normals[i]);
+  }
+}
 const _sinCosCache = /* @__PURE__ */ new Map();
 function getSinCosTable(radialSegments) {
   if (_sinCosCache.has(radialSegments)) {
@@ -26263,19 +26319,17 @@ function getRadiusSinTable(tubularSegments) {
   _radiusSinCache.set(tubularSegments, table);
   return table;
 }
-function updateTubeGeometry(geometry) {
-  const { curve } = geometry;
+function updateTubeVertices(geometry) {
   const { tubularSegments, radius, radialSegments } = geometry.parameters;
-  const frames = curve.computeFrenetFrames(curve.points.length, false);
   const positionAttr = geometry.getAttribute("position");
   const normalAttr = geometry.getAttribute("normal");
   const positions = positionAttr.array;
   const normals = normalAttr.array;
   const sinCos = getSinCosTable(radialSegments);
   const radiusSin = getRadiusSinTable(tubularSegments);
-  const points = curve.points;
-  const frameNormals = frames.normals;
-  const frameBinormals = frames.binormals;
+  const points = geometry.curve.points;
+  const frameNormals = geometry._normals;
+  const frameBinormals = geometry._binormals;
   const stride = (radialSegments + 1) * 3;
   for (let i = 0; i <= tubularSegments; i++) {
     const currentRadius = radiusSin[i] * radius;
@@ -26526,17 +26580,24 @@ class Tube extends Mesh {
    * @param {number} elapsed - Time elapsed for animation
    */
   lerpTo(target, lerpFactor, noiseAmount, elapsed) {
-    const td = this.timeDelta;
-    const tx = target.x;
-    const ty = target.y;
-    const tz = target.z;
-    noiseInput[0] = 0.01 * tx + 0.04 * elapsed + td;
-    noiseInput[1] = 0.01 * ty + 0.048 * elapsed + td;
-    noiseInput[2] = 0.01 * tz + 0.06 * elapsed + td;
-    simplex4D(noiseInput, elapsed * 2, noiseOutput);
-    const targetX = tx + noiseOutput[0] * noiseAmount;
-    const targetY = ty + noiseOutput[1] * noiseAmount;
-    const targetZ = tz + noiseOutput[2] * noiseAmount;
+    let targetX, targetY, targetZ;
+    if (noiseAmount > 0) {
+      const td = this.timeDelta;
+      const tx = target.x;
+      const ty = target.y;
+      const tz = target.z;
+      noiseInput[0] = 0.01 * tx + 0.04 * elapsed + td;
+      noiseInput[1] = 0.01 * ty + 0.048 * elapsed + td;
+      noiseInput[2] = 0.01 * tz + 0.06 * elapsed + td;
+      simplex4D(noiseInput, elapsed * 2, noiseOutput);
+      targetX = tx + noiseOutput[0] * noiseAmount;
+      targetY = ty + noiseOutput[1] * noiseAmount;
+      targetZ = tz + noiseOutput[2] * noiseAmount;
+    } else {
+      targetX = target.x;
+      targetY = target.y;
+      targetZ = target.z;
+    }
     const points = this.points;
     const p0 = points[0];
     const invLerp = 1 - lerpFactor;

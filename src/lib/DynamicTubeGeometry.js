@@ -1,6 +1,10 @@
 /**
  * DynamicTubeGeometry
- * A tube geometry that can be updated in real-time
+ * A tube geometry optimized for real-time updates
+ *
+ * Key optimization: Direct parallel transport frame computation
+ * instead of Three.js's computeFrenetFrames which requires
+ * expensive arc-length parameterization every frame.
  */
 
 import {
@@ -27,19 +31,110 @@ export class DynamicTubeGeometry extends TubeGeometry {
 
     // Store reference to curve
     this.curve = curve;
+
+    // Pre-allocate frame arrays (avoids GC every frame)
+    const segCount = tubularSegments + 1;
+    this._tangents = new Array(segCount);
+    this._normals = new Array(segCount);
+    this._binormals = new Array(segCount);
+    for (let i = 0; i < segCount; i++) {
+      this._tangents[i] = new Vector3();
+      this._normals[i] = new Vector3();
+      this._binormals[i] = new Vector3();
+    }
   }
 
   /**
    * Update geometry based on current curve points
    */
   update() {
-    updateTubeGeometry(this);
+    computeParallelTransportFrames(
+      this.curve.points,
+      this._tangents,
+      this._normals,
+      this._binormals
+    );
+    updateTubeVertices(this);
   }
 }
 
-// Reusable vectors to avoid allocations per frame
-const _normal = new Vector3();
-const _vertex = new Vector3();
+// Reusable vector for rotation axis computation
+const _axis = new Vector3();
+
+/**
+ * Compute tangent/normal/binormal frames using parallel transport.
+ *
+ * Much faster than Three.js computeFrenetFrames because:
+ * - No arc-length parameterization (no binary search, no curve evaluation)
+ * - No array allocation per frame (pre-allocated)
+ * - No trig calls in the transport loop (Rodrigues' formula with direct cos/sin)
+ */
+function computeParallelTransportFrames(points, tangents, normals, binormals) {
+  const len = points.length;
+
+  // Tangents via finite differences
+  tangents[0].subVectors(points[1], points[0]).normalize();
+  for (let i = 1; i < len - 1; i++) {
+    tangents[i].subVectors(points[i + 1], points[i - 1]).normalize();
+  }
+  tangents[len - 1].subVectors(points[len - 1], points[len - 2]).normalize();
+
+  // Initial normal: cross product of tangent with least-aligned axis
+  const t0 = tangents[0];
+  const ax = Math.abs(t0.x), ay = Math.abs(t0.y), az = Math.abs(t0.z);
+  if (ax <= ay && ax <= az) {
+    _axis.set(1, 0, 0);
+  } else if (ay <= az) {
+    _axis.set(0, 1, 0);
+  } else {
+    _axis.set(0, 0, 1);
+  }
+  normals[0].crossVectors(t0, _axis).normalize();
+  binormals[0].crossVectors(t0, normals[0]);
+
+  // Parallel transport using Rodrigues' rotation formula
+  // For unit tangents: cos(angle) = dot(t_prev, t_curr), sin(angle) = |cross(t_prev, t_curr)|
+  // This avoids all trig function calls in the loop
+  for (let i = 1; i < len; i++) {
+    // Start with previous normal
+    normals[i].copy(normals[i - 1]);
+
+    // Rotation axis = cross(t_prev, t_curr)
+    _axis.crossVectors(tangents[i - 1], tangents[i]);
+    const sinA = _axis.length();
+
+    if (sinA > 1e-6) {
+      // Normalize axis
+      const invSin = 1 / sinA;
+      const kx = _axis.x * invSin;
+      const ky = _axis.y * invSin;
+      const kz = _axis.z * invSin;
+
+      // cos(angle) = dot product of unit tangents
+      const cosA = tangents[i - 1].dot(tangents[i]);
+      const oneMinusCos = 1 - cosA;
+
+      // Rodrigues' formula: v' = v*cos + (k x v)*sin + k*(k . v)*(1-cos)
+      const n = normals[i];
+      const nx = n.x, ny = n.y, nz = n.z;
+
+      // k x n
+      const cx = ky * nz - kz * ny;
+      const cy = kz * nx - kx * nz;
+      const cz = kx * ny - ky * nx;
+
+      // k . n
+      const d = kx * nx + ky * ny + kz * nz;
+
+      n.x = nx * cosA + cx * sinA + kx * d * oneMinusCos;
+      n.y = ny * cosA + cy * sinA + ky * d * oneMinusCos;
+      n.z = nz * cosA + cz * sinA + kz * d * oneMinusCos;
+    }
+
+    // Binormal = tangent x normal
+    binormals[i].crossVectors(tangents[i], normals[i]);
+  }
+}
 
 // Pre-computed sin/cos tables (cached per radialSegments count)
 const _sinCosCache = new Map();
@@ -74,15 +169,10 @@ function getRadiusSinTable(tubularSegments) {
 }
 
 /**
- * Update tube geometry vertices based on curve
- * @param {DynamicTubeGeometry} geometry
+ * Update tube vertices using pre-computed parallel transport frames
  */
-function updateTubeGeometry(geometry) {
-  const { curve } = geometry;
+function updateTubeVertices(geometry) {
   const { tubularSegments, radius, radialSegments } = geometry.parameters;
-
-  // Compute Frenet frames for the curve
-  const frames = curve.computeFrenetFrames(curve.points.length, false);
 
   // Get attribute arrays
   const positionAttr = geometry.getAttribute('position');
@@ -94,11 +184,9 @@ function updateTubeGeometry(geometry) {
   const sinCos = getSinCosTable(radialSegments);
   const radiusSin = getRadiusSinTable(tubularSegments);
 
-  // Use module-level reusable vectors
-  const normal = _normal;
-  const points = curve.points;
-  const frameNormals = frames.normals;
-  const frameBinormals = frames.binormals;
+  const points = geometry.curve.points;
+  const frameNormals = geometry._normals;
+  const frameBinormals = geometry._binormals;
 
   const stride = (radialSegments + 1) * 3;
 

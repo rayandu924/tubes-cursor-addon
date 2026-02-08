@@ -47,23 +47,30 @@ export class Tube extends Mesh {
    * @param {number} elapsed - Time elapsed for animation
    */
   lerpTo(target, lerpFactor, noiseAmount, elapsed) {
-    const td = this.timeDelta;
-    const tx = target.x;
-    const ty = target.y;
-    const tz = target.z;
+    let targetX, targetY, targetZ;
 
-    // Calculate noise input
-    noiseInput[0] = 0.01 * tx + 0.040 * elapsed + td;
-    noiseInput[1] = 0.01 * ty + 0.048 * elapsed + td;
-    noiseInput[2] = 0.01 * tz + 0.060 * elapsed + td;
+    if (noiseAmount > 0) {
+      const td = this.timeDelta;
+      const tx = target.x;
+      const ty = target.y;
+      const tz = target.z;
 
-    // Get noise displacement
-    simplex4D(noiseInput, elapsed * 2, noiseOutput);
+      // Calculate noise input
+      noiseInput[0] = 0.01 * tx + 0.040 * elapsed + td;
+      noiseInput[1] = 0.01 * ty + 0.048 * elapsed + td;
+      noiseInput[2] = 0.01 * tz + 0.060 * elapsed + td;
 
-    // Target with noise (inline, no copy)
-    const targetX = tx + noiseOutput[0] * noiseAmount;
-    const targetY = ty + noiseOutput[1] * noiseAmount;
-    const targetZ = tz + noiseOutput[2] * noiseAmount;
+      // Get noise displacement
+      simplex4D(noiseInput, elapsed * 2, noiseOutput);
+
+      targetX = tx + noiseOutput[0] * noiseAmount;
+      targetY = ty + noiseOutput[1] * noiseAmount;
+      targetZ = tz + noiseOutput[2] * noiseAmount;
+    } else {
+      targetX = target.x;
+      targetY = target.y;
+      targetZ = target.z;
+    }
 
     // Lerp first point (head) - inline for speed
     const points = this.points;
