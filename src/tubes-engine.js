@@ -287,7 +287,7 @@ export function TubesCursor(canvas, opts = {}) {
     animId = requestAnimationFrame(animate);
     if (contextLost) return;
 
-    const delta = clock.getDelta();
+    const delta = Math.min(clock.getDelta(), 1 / 30); // clamp to 30fps min — prevents trail collapse on GC/throttle spikes
     const elapsed = clock.getElapsedTime();
 
     if (mouseOver) {

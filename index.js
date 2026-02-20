@@ -21939,7 +21939,7 @@ function dm(i, e = {}) {
   let Ke = null, $e = !1;
   function Oe() {
     if ($e || (Ke = requestAnimationFrame(Oe), k)) return;
-    const ie = w.getDelta(), b = w.getElapsedTime();
+    const ie = Math.min(w.getDelta(), 1 / 30), b = w.getElapsedTime();
     if (j)
       oe.copy(Ie);
     else {
