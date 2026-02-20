@@ -168,10 +168,18 @@ export function TubesCursor(canvas, opts = {}) {
   const ro = new ResizeObserver(resize);
   ro.observe(canvas.parentElement || document.body);
 
-  // Context loss
+  // Context loss — rebuild bloom on restore (render targets don't survive context loss)
   let contextLost = false;
   const onCtxLost = (e) => { e.preventDefault(); contextLost = true; };
-  const onCtxRestored = () => { contextLost = false; };
+  const onCtxRestored = () => {
+    contextLost = false;
+    clock.getDelta(); // drain accumulated delta so next frame gets a clean ~16ms
+    if (bloom) {
+      bloom.dispose();
+      bloom = makeBloom(bloomCfg || {});
+      if (w > 0 && h > 0) bloom.resize(w, h);
+    }
+  };
   canvas.addEventListener('webglcontextlost', onCtxLost);
   canvas.addEventListener('webglcontextrestored', onCtxRestored);
 

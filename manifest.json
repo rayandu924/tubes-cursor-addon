@@ -1,6 +1,6 @@
 {
   "name": "Tubes Cursor",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "entry": "index.js",
   "description": "Interactive 3D tubes that follow the cursor with colorful lights and glow effect",
   "author": "rayandu924",
