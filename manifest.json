@@ -1,9 +1,7 @@
 {
   "name": "Tubes Cursor",
-  "version": "3.1.0",
-  "sdkVersion": "2.17.0",
-  "type": "cursor",
-  "cursorExport": "initializeCursor",
+  "version": "4.0.0",
+  "entry": "index.js",
   "description": "Interactive 3D tubes that follow the cursor with colorful lights and glow effect",
   "author": "rayandu924",
   "categories": ["cursor", "3d", "interactive"],
@@ -70,12 +68,12 @@
     },
     "smoothness": {
       "type": "range",
-      "label": "Smoothness (Lerp)",
-      "description": "How quickly tubes follow the cursor (lower = smoother)",
-      "default": 0.35,
-      "min": 0.01,
-      "max": 0.5,
-      "step": 0.01
+      "label": "Smoothness",
+      "description": "How quickly tubes follow the cursor",
+      "default": 0.85,
+      "min": 0.05,
+      "max": 1,
+      "step": 0.05
     },
     "noise": {
       "type": "range",
@@ -119,7 +117,7 @@
     "lightIntensity": {
       "type": "range",
       "label": "Light Intensity",
-      "default": 40,
+      "default": 200,
       "min": 0,
       "max": 500,
       "step": 10
@@ -157,7 +155,7 @@
     "bloomEnabled": {
       "type": "boolean",
       "label": "Enable Bloom",
-      "default": false
+      "default": true
     },
     "bloomThreshold": {
       "type": "range",
@@ -170,57 +168,19 @@
     "bloomStrength": {
       "type": "range",
       "label": "Strength",
-      "default": 0.3,
+      "default": 0.7,
       "min": 0,
-      "max": 3,
+      "max": 10,
       "step": 0.1
     },
     "bloomRadius": {
       "type": "range",
       "label": "Radius",
-      "default": 0.2,
+      "default": 1.5,
       "min": 0,
-      "max": 2,
+      "max": 3,
       "step": 0.1
     },
-
-    "sleepSection": {
-      "type": "section",
-      "label": "😴 Sleep Mode (When Cursor Outside)"
-    },
-    "sleepRadiusX": {
-      "type": "range",
-      "label": "Horizontal Radius",
-      "default": 300,
-      "min": 50,
-      "max": 600,
-      "step": 10
-    },
-    "sleepRadiusY": {
-      "type": "range",
-      "label": "Vertical Radius",
-      "default": 150,
-      "min": 50,
-      "max": 400,
-      "step": 10
-    },
-    "sleepSpeedX": {
-      "type": "range",
-      "label": "Horizontal Speed",
-      "default": 1,
-      "min": 0.1,
-      "max": 5,
-      "step": 0.1
-    },
-    "sleepSpeedY": {
-      "type": "range",
-      "label": "Vertical Speed",
-      "default": 2,
-      "min": 0.1,
-      "max": 5,
-      "step": 0.1
-    },
-
     "actionsSection": {
       "type": "section",
       "label": "⚡ Quick Actions"
@@ -232,8 +192,8 @@
     }
   },
   "defaultLayout": {
-    "xPercent": 50,
-    "yPercent": 50,
+    "xPercent": 0,
+    "yPercent": 0,
     "widthPercent": 100,
     "heightPercent": 100
   }

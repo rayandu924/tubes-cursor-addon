@@ -1,25 +1,18 @@
 {
   "name": "tubes-cursor-addon",
-  "version": "3.1.0",
+  "version": "4.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
-    "build": "vite build && npm run build:cursor",
-    "build:html": "vite build",
-    "build:cursor": "BUILD_CURSOR=true vite build",
-    "preview": "vite preview"
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "serve": "npx serve dist --cors -l 5173"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "Custom Tubes Cursor addon for MyWallPaper",
   "devDependencies": {
-    "js-beautify": "^1.15.4",
-    "lil-gui": "^0.21.0",
-    "prettier": "^3.8.1",
-    "terser": "^5.46.0",
-    "vite": "^6.4.1",
-    "vite-plugin-singlefile": "^2.3.0"
+    "@mywallpaper/sdk-react": "file:../MyWallpaper/packages/sdk-react",
+    "@mywallpaper/vite-plugin": "file:../MyWallpaper/packages/vite-plugin",
+    "react": "^19.0.0",
+    "vite": "^6.0.0"
   },
   "dependencies": {
     "three": "^0.182.0"
