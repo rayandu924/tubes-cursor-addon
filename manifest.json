@@ -1,14 +1,15 @@
 {
   "name": "Tubes Cursor",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "entry": "index.js",
   "description": "Interactive 3D tubes that follow the cursor with colorful lights and glow effect",
-  "author": "rayandu924",
-  "categories": ["cursor", "3d", "interactive"],
-  "capabilities": {
-    "hotReload": true,
-    "systemEvents": ["viewport:resize", "visibility:change"]
-  },
+  "author": "MyWallpaper Community",
+  "license": "MIT",
+  "categories": [
+    "cursor",
+    "3d",
+    "interactive"
+  ],
   "settings": {
     "tubesSection": {
       "type": "section",
@@ -40,7 +41,6 @@
       "max": 256,
       "step": 1
     },
-
     "materialSection": {
       "type": "section",
       "label": "✨ Material"
@@ -61,7 +61,6 @@
       "max": 1,
       "step": 0.05
     },
-
     "animationSection": {
       "type": "section",
       "label": "🌊 Animation"
@@ -84,7 +83,6 @@
       "max": 0.3,
       "step": 0.01
     },
-
     "tubeColorsSection": {
       "type": "section",
       "label": "🎨 Tube Colors (Gradient)"
@@ -109,7 +107,6 @@
       "label": "Actions",
       "buttonLabel": "🎲 Randomize Tube Colors"
     },
-
     "lightColorsSection": {
       "type": "section",
       "label": "💡 Lights"
@@ -147,7 +144,6 @@
       "label": "Actions",
       "buttonLabel": "🎲 Randomize Light Colors"
     },
-
     "bloomSection": {
       "type": "section",
       "label": "🌟 Bloom Effect"
